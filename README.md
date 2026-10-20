@@ -7,9 +7,9 @@ AgriCycle is a location-aware web exchange connecting agricultural waste generat
 
 ## 👥 Project Team (CEC/CSE/2026-27/ P-44)
 * **Thanush (4CB24CS164)** — Backend Architecture, Database, Authentication (Lead)
-* **Shreya (4CB24CS141)** — Frontend UI/UX & Responsive Dashboards
-* **Samarth (4CB24CS126)** — Matching Algorithms & Geospatial Proximity (Haversine)
-* **Tanisha (4CB24CS160)** — AI Chatbot & CNN Image Verification
+* **Shreya (4CB24CS141)** — Matching Algorithms & Geospatial Proximity (Haversine)
+* **Samarth (4CB24CS126)** — AI Chatbot & CNN Image Verification
+* **Tanisha (4CB24CS160)** — Frontend UI/UX & Responsive Dashboards 
 * **Faculty Guide:** Ms. Verdine Saviola Noronha
 
 ---
