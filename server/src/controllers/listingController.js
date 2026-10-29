@@ -1,4 +1,5 @@
 import { Listing } from '../models/index.js';
+import { calculateHaversineDistance, isValidCoordinates } from '../utils/haversine.js';
 
 /**
  * @desc    Create a new agricultural waste listing
@@ -38,6 +39,13 @@ export const createListing = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Location coordinates must contain longitude and latitude',
+      });
+    }
+
+    if (!isValidCoordinates(coordinates[1], coordinates[0])) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid coordinates: latitude must be between -90 and 90, longitude between -180 and 180',
       });
     }
 
@@ -120,16 +128,28 @@ export const getAllListings = async (req, res) => {
 
     // Geospatial proximity filtering using MongoDB $centerSphere
     const hasCoordinates = lat !== undefined && lng !== undefined;
-    const userLat = Number(lat);
-    const userLng = Number(lng);
+    let userLat;
+    let userLng;
 
-    if (hasCoordinates && maxDistanceKm) {
-      const radiusInRadians = Number(maxDistanceKm) / 6371; // Earth's radius ~6371 km
-      query.location = {
-        $geoWithin: {
-          $centerSphere: [[userLng, userLat], radiusInRadians],
-        },
-      };
+    if (hasCoordinates) {
+      userLat = Number(lat);
+      userLng = Number(lng);
+
+      if (!isValidCoordinates(userLat, userLng)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid coordinates: lat must be between -90 and 90, lng between -180 and 180',
+        });
+      }
+
+      if (maxDistanceKm) {
+        const radiusInRadians = Number(maxDistanceKm) / 6371; // Earth's radius ~6371 km
+        query.location = {
+          $geoWithin: {
+            $centerSphere: [[userLng, userLat], radiusInRadians],
+          },
+        };
+      }
     }
 
     const pageNum = parseInt(page, 10);
@@ -143,12 +163,35 @@ export const getAllListings = async (req, res) => {
     if (sortBy === 'quantity_desc') sortOptions = { availableQuantityKg: -1 };
 
     const total = await Listing.countDocuments(query);
-    const listings = await Listing.find(query)
+    let listings = await Listing.find(query)
       .populate('generator', 'name phone organization email')
       .sort(sortOptions)
       .skip(skip)
       .limit(limitNum)
       .lean();
+
+    // Calculate exact Haversine distance if user provided coordinates
+    if (hasCoordinates) {
+      listings = listings.map((item) => {
+        const itemLng = item.location?.coordinates?.[0];
+        const itemLat = item.location?.coordinates?.[1];
+
+        let distanceKm = null;
+        if (itemLng !== undefined && itemLat !== undefined) {
+          distanceKm = calculateHaversineDistance(userLat, userLng, itemLat, itemLng);
+        }
+
+        return {
+          ...item,
+          distanceKm,
+        };
+      });
+
+      // Sort by distance if requested
+      if (sortBy === 'distance') {
+        listings.sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+      }
+    }
 
 
     return res.status(200).json({

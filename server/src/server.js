@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import listingRoutes from './routes/listingRoutes.js';
 import exchangeRoutes from './routes/exchangeRoutes.js';
+import matchRoutes from './routes/matchRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/exchanges', exchangeRoutes);
+app.use('/api/match', matchRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
