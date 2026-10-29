@@ -1,5 +1,4 @@
 import { Listing } from '../models/index.js';
-import { calculateHaversineDistance } from '../utils/haversine.js';
 
 /**
  * @desc    Create a new agricultural waste listing
@@ -144,30 +143,13 @@ export const getAllListings = async (req, res) => {
     if (sortBy === 'quantity_desc') sortOptions = { availableQuantityKg: -1 };
 
     const total = await Listing.countDocuments(query);
-    let listings = await Listing.find(query)
+    const listings = await Listing.find(query)
       .populate('generator', 'name phone organization email')
       .sort(sortOptions)
       .skip(skip)
       .limit(limitNum)
       .lean();
 
-    // If user provided coordinates, calculate exact Haversine distance in km for each listing
-    if (hasCoordinates) {
-      listings = listings.map((item) => {
-        const itemLng = item.location.coordinates[0];
-        const itemLat = item.location.coordinates[1];
-        const distanceKm = calculateHaversineDistance(userLat, userLng, itemLat, itemLng);
-        return {
-          ...item,
-          distanceKm,
-        };
-      });
-
-      // Sort by distance if requested
-      if (sortBy === 'distance') {
-        listings.sort((a, b) => a.distanceKm - b.distanceKm);
-      }
-    }
 
     return res.status(200).json({
       success: true,
