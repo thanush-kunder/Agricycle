@@ -1,17 +1,21 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import listingRoutes from './routes/listingRoutes.js';
 import exchangeRoutes from './routes/exchangeRoutes.js';
 import matchRoutes from './routes/matchRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Load environment variables
 dotenv.config();
-
-// Connect to MongoDB
-connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,11 +24,17 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: process.env.CLIENT_URL || '*' }));
 app.use(express.json());
 
+// Serve static uploaded files
+const uploadDir = path.join(__dirname, '../uploads');
+app.use('/uploads', express.static(uploadDir));
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/exchanges', exchangeRoutes);
 app.use('/api/match', matchRoutes);
+app.use('/api/upload', uploadRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -52,8 +62,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 AgriCycle backend server running on http://localhost:${PORT}`);
-});
+// Start server if launched directly
+const isMainModule = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename);
+if (isMainModule) {
+  connectDB();
+  app.listen(PORT, () => {
+    console.log(`🚀 AgriCycle backend server running on http://localhost:${PORT}`);
+  });
+}
 
 export default app;

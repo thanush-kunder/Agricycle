@@ -16,9 +16,9 @@ AgriCycle is a location-aware web exchange connecting agricultural waste generat
 
 ## 🛠️ Technology Stack
 * **Frontend:** React.js, Tailwind CSS / Vanilla CSS, Leaflet (Maps)
-* **Backend:** Node.js, Express.js, JWT (Authentication)
+* **Backend:** Node.js, Express.js, JWT (Authentication), Multer (Image Uploads)
 * **Database & Cloud:** MongoDB (Mongoose), Cloudinary (Image storage)
-* **AI & Algorithms:** Python, TensorFlow / PyTorch (CNN Quality Verification), Haversine Formula
+* **AI & Algorithms:** Python, FastAPI, Pillow, NumPy, TensorFlow / PyTorch (CNN Quality Verification), Haversine Formula
 
 ---
 
@@ -47,11 +47,30 @@ cp .env.example .env   # Configure your MONGO_URI and JWT_SECRET
 npm run dev
 ```
 
-### 2. Setup Frontend (`client`)
+### 2. Setup AI Microservice (`ai-service`)
+```bash
+cd ai-service
+pip install -r requirements.txt
+cp .env.example .env
+uvicorn main:app --reload --port 8000
+```
+
+### 3. Setup Frontend (`client`)
 ```bash
 cd client
 npm install
 npm run dev
+```
+
+### 4. Running Test Suites
+```bash
+# Server unit and integration test suite
+cd server
+npm test
+
+# AI Microservice test suite
+cd ai-service
+python test_ai_service.py
 ```
 
 ---
