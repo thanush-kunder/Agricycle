@@ -10,6 +10,14 @@ coverage/
 build/
 dist/
 
+# User Uploads
+server/uploads/*
+!server/uploads/.gitkeep
+
+# AI Models storage
+ai-service/models/*
+!ai-service/models/.gitkeep
+
 # Environment Secrets & Config
 .env
 .env.local
