@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How AgriCycle Works | Circular Exchange Workflow</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="topbar">
+    <a class="brand" href="home.html">
+      <span class="brand-mark">↻</span>
+      <span>Agri<span>Cycle</span><small>WASTE TO WORTH</small></span>
+    </a>
+    <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">☰</button>
+    <nav class="nav" id="nav">
+      <a href="home.html">Home</a>
+      <a href="how-it-works.html" class="active">How It Works</a>
+      <a href="browse.html">Browse & Map</a>
+      <a href="list-waste.html">List Waste</a>
+      <a href="requests.html">Requests</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="impact.html">Impact</a>
+    </nav>
+    <div class="topbar-actions">
+      <button class="role-pill" id="roleSwitcherBtn" title="Click to toggle perspective">
+        <span class="role-dot"></span><span id="roleLabelText">🌾 Farmer</span>
+      </button>
+      <a class="btn btn-outline btn-sm" href="index.html">Sign In</a>
+      <a class="btn btn-green btn-sm" href="list-waste.html">+ List Waste</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Page Hero -->
+    <section class="page-hero">
+      <div class="container">
+        <span class="eyebrow">CLOSED-LOOP CIRCULAR LIFECYCLE</span>
+        <h1>From farm byproduct to <em>industrial asset.</em></h1>
+        <p>AgriCycle eliminates the guesswork from agricultural waste exchange with automated geolocation, quality assessment, and transparent order tracking.</p>
+      </div>
+    </section>
+
+    <section class="container">
+      <!-- 4-Step Process Grid -->
+      <div class="steps" style="grid-template-columns:repeat(4, 1fr)">
+        <article class="step">
+          <span class="step-num">STAGE 01</span>
+          <div class="step-icon">🌾</div>
+          <h3>1. List Crop Biomass</h3>
+          <p>Farmers submit crop type, available kilograms, location coordinates, and select sell, barter, or free exchange.</p>
+        </article>
+
+        <article class="step">
+          <span class="step-num">STAGE 02</span>
+          <div class="step-icon">🔬</div>
+          <h3>2. AI Quality Check</h3>
+          <p>Convolutional Neural Network (CNN) analyzes fiber purity and moisture levels to assign verified Grade A/B certifications.</p>
+        </article>
+
+        <article class="step">
+          <span class="step-num">STAGE 03</span>
+          <div class="step-icon">📍</div>
+          <h3>3. Haversine Matching</h3>
+          <p>Our geospatial algorithm calculates geodesic distances to connect farmers with nearest bio-industries and compost units.</p>
+        </article>
+
+        <article class="step">
+          <span class="step-num">STAGE 04</span>
+          <div class="step-icon">🚚</div>
+          <h3>4. Dispatch & Reuse</h3>
+          <p>Utilizer places request, pickup logistics are arranged, and the exchange receipt generates verified carbon credits.</p>
+        </article>
+      </div>
+
+      <!-- Linear vs Circular Comparison Table -->
+      <div class="section-head" style="margin-top:20px">
+        <div>
+          <span class="eyebrow">PARADIGM SHIFT</span>
+          <h2>Traditional Practice vs <em>AgriCycle</em></h2>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>Traditional Linear Model</th>
+              <th>AgriCycle Circular Platform</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Residue Fate</b></td>
+              <td>Open-field stubble burning or rotting in landfills</td>
+              <td><b style="color:var(--green)">100% Repurposed</b> into bio-pellets, compost, or paper</td>
+            </tr>
+            <tr>
+              <td><b>Air Quality Impact</b></td>
+              <td>Severe seasonal smog, toxic PM2.5, carbon emissions</td>
+              <td><b style="color:var(--green)">Zero Burn</b> with real-time carbon offset accounting</td>
+            </tr>
+            <tr>
+              <td><b>Farmer Financials</b></td>
+              <td>Expenses incurred to clear fields and tractors</td>
+              <td><b style="color:var(--green)">Additional Revenue Stream</b> of ₹1,500 – ₹3,500/ton</td>
+            </tr>
+            <tr>
+              <td><b>Quality Guarantee</b></td>
+              <td>Unverified quality, high moisture risk</td>
+              <td><b style="color:var(--green)">AI CNN Quality Verification</b> & moisture grading</td>
+            </tr>
+            <tr>
+              <td><b>Transport Logistics</b></td>
+              <td>Ad-hoc long-haul hauling with high freight cost</td>
+              <td><b style="color:var(--green)">Haversine Proximity Optimization</b> for nearest buyers</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Callout -->
+      <div class="callout">
+        <h2>Experience the workflow in action</h2>
+        <p>Browse active listings on the Leaflet map or publish a sample listing to test the AI CNN verification preview.</p>
+        <div class="actions">
+          <a class="btn btn-light" href="browse.html">Explore Available Biomass ↗</a>
+          <a class="btn btn-outline" style="color:#ffffff;border-color:rgba(255,255,255,0.4)" href="list-waste.html">Test Listing Form</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <a class="brand" href="home.html">
+      <span class="brand-mark">↻</span>
+      <span>Agri<span>Cycle</span><small>WASTE TO WORTH</small></span>
+    </a>
+    <p>AgriCycle — Turning Agricultural Waste into Valuable Resources • Project Team P-44</p>
+    <span>Karnataka Circular Exchange System</span>
+  </footer>
+
+  <!-- Toast Notification Container -->
+  <div class="toast" id="toast" role="status"></div>
+
+  <!-- AgriBot Floating Assistant -->
+  <div class="chatbot-bubble" id="agriBotBubble" title="Chat with AgriBot">💬</div>
+  <div class="chatbot-window hidden" id="agriBotWindow">
+    <div class="chatbot-header">
+      <h4>🌾 AgriBot Assistant</h4>
+      <button id="agriBotClose" style="background:none;border:0;color:#fff;font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div class="chatbot-messages" id="agriBotMessages">
+      <div class="chat-msg bot">Have questions about how Haversine proximity calculations or AI CNN verification work? Ask me!</div>
+    </div>
+    <div class="chat-quick-actions">
+      <span class="chat-pill" data-query="haversine distance">⌖ Haversine Formula</span>
+      <span class="chat-pill" data-query="AI verification">🔬 CNN Deep Learning</span>
+    </div>
+    <div class="chatbot-input-bar">
+      <input type="text" id="agriBotInput" placeholder="Ask AgriBot a question...">
+      <button id="agriBotSend">➤</button>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
