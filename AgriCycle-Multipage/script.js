@@ -1511,3 +1511,79 @@ document.addEventListener("DOMContentLoaded", () => {
   initImpactCalculator();
   setupAgriBot();
 });
+
+
+// ==========================================================================
+// Theme Management (Light / Dark) & Options Menu
+// ==========================================================================
+function initTheme() {
+  const savedTheme = localStorage.getItem("agricycle_theme") || "light";
+  document.documentElement.setAttribute("data-theme", savedTheme);
+  updateThemeUI(savedTheme);
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+  const newTheme = currentTheme === "dark" ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", newTheme);
+  localStorage.setItem("agricycle_theme", newTheme);
+  updateThemeUI(newTheme);
+  if (typeof showToast === "function") {
+    showToast(`Switched to ${newTheme === "dark" ? "Dark Mode 🌙" : "Light Mode ☀️"}`, "info");
+  }
+}
+
+function updateThemeUI(theme) {
+  const themeText = document.getElementById("themeText");
+  const themeIcon = document.getElementById("themeIcon");
+  if (themeText && themeIcon) {
+    if (theme === "dark") {
+      themeText.textContent = "Light Mode";
+      themeIcon.textContent = "☀️";
+    } else {
+      themeText.textContent = "Dark Mode";
+      themeIcon.textContent = "🌙";
+    }
+  }
+}
+
+function initOptionsMenu() {
+  const optionsBtn = document.getElementById("optionsBtn");
+  const optionsMenu = document.getElementById("optionsMenu");
+  const themeToggleBtn = document.getElementById("themeToggleBtn");
+
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleTheme();
+    });
+  }
+
+  if (optionsBtn && optionsMenu) {
+    optionsBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = optionsMenu.classList.toggle("open");
+      optionsBtn.classList.toggle("active", isOpen);
+      optionsBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!optionsMenu.contains(e.target) && !optionsBtn.contains(e.target)) {
+        optionsMenu.classList.remove("open");
+        optionsBtn.classList.remove("active");
+        optionsBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && optionsMenu.classList.contains("open")) {
+        optionsMenu.classList.remove("open");
+        optionsBtn.classList.remove("active");
+        optionsBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
+}
+
+initTheme();
+initOptionsMenu();

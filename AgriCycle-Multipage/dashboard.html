@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script>
+    (function() {
+      var t = localStorage.getItem('agricycle_theme');
+      if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    })();
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard | AgriCycle</title>
@@ -9,29 +15,66 @@
 <body>
 
   <!-- Top Navigation Bar -->
-  <header class="topbar">
-    <a class="brand" href="home.html">
-      <span class="brand-mark">↻</span>
-      <span>Agri<span>Cycle</span><small>WASTE TO WORTH</small></span>
+    <header class="topbar">
+    <a href="home.html" class="logo">
+      <span class="logo-mark">🌱</span>
+      <span class="logo-text">Agri<strong>Cycle</strong></span>
     </a>
-    <button class="menu-toggle" id="menuToggle" aria-label="Toggle navigation">☰</button>
-    <nav class="nav" id="nav">
-      <a href="home.html">Home</a>
-      <a href="browse.html">Browse & Map</a>
-      <a href="list-waste.html">List Waste</a>
-      <a href="requests.html">Requests</a>
-      <a href="dashboard.html" class="active">Dashboard</a>
-      <a href="impact.html">Impact</a>
-    </nav>
     <div class="topbar-actions">
       <div class="role-pill" id="roleSwitcherBtn" title="Logged in as Active User">
         <span class="role-dot"></span><span id="roleLabelText">🌾 Farmer</span>
       </div>
-      <button type="button" class="btn btn-light btn-sm" id="topbarChatbotBtn" title="Open AI Chatbot Assistant">
-        🤖 AI Chatbot
-      </button>
-      <a class="btn btn-outline btn-sm btn-signout" id="authNavBtn" href="index.html" onclick="handleSignOut(event)">Sign Out</a>
-      <a class="btn btn-green btn-sm" href="list-waste.html">+ List Waste</a>
+      <a class="btn btn-green btn-sm btn-list-action" href="list-waste.html">+ List Waste</a>
+      
+      <!-- Options Dropdown at Top Right Corner -->
+      <div class="options-wrapper" id="optionsWrapper">
+        <button type="button" class="btn btn-light btn-sm options-btn" id="optionsBtn" aria-expanded="false" aria-haspopup="true" title="Open Menu & Options">
+          <span class="opt-btn-icon">⚙️</span>
+          <span class="opt-btn-label">Options</span>
+          <span class="opt-btn-arrow">▾</span>
+        </button>
+        <div class="options-menu" id="optionsMenu" role="menu">
+          <div class="options-section-label">Navigation</div>
+          <a href="home.html" class="options-link" role="menuitem">
+            <span class="opt-icon">🏠</span> <span>Overview</span>
+          </a>
+          <a href="browse.html" class="options-link" role="menuitem">
+            <span class="opt-icon">🔍</span> <span>Browse & Map</span>
+          </a>
+          <a href="list-waste.html" class="options-link" role="menuitem">
+            <span class="opt-icon">➕</span> <span>List Waste</span>
+          </a>
+          <a href="requests.html" class="options-link" role="menuitem">
+            <span class="opt-icon">📋</span> <span>Requests</span>
+          </a>
+          <a href="dashboard.html" class="options-link active" role="menuitem">
+            <span class="opt-icon">📊</span> <span>Dashboard</span>
+          </a>
+          <a href="impact.html" class="options-link" role="menuitem">
+            <span class="opt-icon">🌍</span> <span>Impact</span>
+          </a>
+          <button type="button" class="options-link options-chatbot-link" id="topbarChatbotBtn" role="menuitem">
+            <span class="opt-icon">🤖</span> <span>AI Chatbot</span>
+          </button>
+          
+          <div class="options-divider"></div>
+          
+          <div class="options-section-label">Preferences</div>
+          <button type="button" class="options-link options-theme-btn" id="themeToggleBtn" role="menuitem" title="Toggle Theme">
+            <span class="opt-icon" id="themeIcon">🌙</span>
+            <span id="themeText">Dark Theme</span>
+            <span class="theme-toggle-switch">
+              <span class="theme-toggle-slider"></span>
+            </span>
+          </button>
+          
+          <div class="options-divider"></div>
+          
+          <a href="index.html" class="options-link options-signout" role="menuitem" onclick="handleSignOut(event)">
+            <span class="opt-icon">🚪</span> <span>Sign Out</span>
+          </a>
+        </div>
+      </div>
     </div>
   </header>
 
