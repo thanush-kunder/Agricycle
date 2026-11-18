@@ -312,6 +312,114 @@
         margin-bottom: 0;
       }
     }
+  
+    /* Enhanced Create Account Modal Styles */
+    .create-account-card {
+      max-width: 480px;
+      width: 100%;
+      border: 1px solid var(--line);
+      box-shadow: 0 25px 60px rgba(20, 61, 40, 0.22);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      background: #ffffff;
+      position: relative;
+      animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modalSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-header-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--lime);
+      display: grid;
+      place-items: center;
+      font-size: 24px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(43, 119, 74, 0.15);
+    }
+
+    .modal-role-toggle {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--paper);
+      padding: 6px;
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+      border: 1px solid var(--line);
+    }
+
+    .modal-role-btn {
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .modal-role-btn.active {
+      background: #ffffff;
+      color: var(--forest);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .form-group-modal {
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .form-group-modal label {
+      display: block;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--forest);
+      margin-bottom: 6px;
+    }
+
+    .form-group-modal input,
+    .form-group-modal select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--line);
+      border-radius: 10px;
+      font-size: 14px;
+      background: #ffffff;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .form-group-modal input:focus,
+    .form-group-modal select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(43, 119, 74, 0.12);
+    }
+
+    .form-group-modal .field-hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
   </style>
 </head>
 <body>
@@ -486,6 +594,71 @@
     <span>Farmer & Customer Gateway</span>
   </footer>
 
+  
+  <!-- Interactive Create Account Modal -->
+  <div class="modal-overlay" id="createAccountModal" onclick="if(event.target===this)closeCreateAccountModal()">
+    <div class="create-account-card">
+      <button class="modal-close" onclick="closeCreateAccountModal()" aria-label="Close modal">&times;</button>
+      
+      <div class="modal-header-icon" id="modalHeaderIcon">🌾</div>
+      <h3 style="font-size: 22px; font-weight: 800; color: var(--forest); margin-bottom: 4px;">Create AgriCycle Account</h3>
+      <p class="muted" style="font-size: 13px; margin-bottom: 18px;">Join Karnataka's Circular Biomass Network</p>
+
+      <div class="modal-role-toggle">
+        <button type="button" class="modal-role-btn active" id="modalRoleFarmer" onclick="switchModalRole('farmer')">
+          <span>🌾</span> I am a Farmer
+        </button>
+        <button type="button" class="modal-role-btn" id="modalRoleUtilizer" onclick="switchModalRole('utilizer')">
+          <span>🛒</span> I am a Customer
+        </button>
+      </div>
+
+      <form id="createAccountForm" onsubmit="submitCreateAccount(event)">
+        <input type="hidden" id="regRole" value="farmer">
+
+        <div class="form-group-modal">
+          <label for="regFullName" id="modalNameLabel">Farmer / Farm Full Name *</label>
+          <input type="text" id="regFullName" placeholder="e.g. Basavaraj Patil or Green Acres" required>
+        </div>
+
+        <div class="form-group-modal">
+          <label for="regIdentifier">Mobile Number or Email *</label>
+          <input type="text" id="regIdentifier" placeholder="e.g. 9876543210 or contact@domain.com" required>
+          <div class="field-hint">Used for receiving transaction alerts & OTP verification</div>
+        </div>
+
+        <div class="form-group-modal" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div>
+            <label for="regDistrict">District / Region *</label>
+            <select id="regDistrict" required>
+              <option value="Mandya" selected>Mandya</option>
+              <option value="Udupi">Udupi</option>
+              <option value="Belagavi">Belagavi</option>
+              <option value="Dharwad">Dharwad</option>
+              <option value="Mysuru">Mysuru</option>
+              <option value="Bengaluru Rural">Bengaluru Rural</option>
+              <option value="Shivamogga">Shivamogga</option>
+              <option value="Tumakuru">Tumakuru</option>
+              <option value="Other">Other District</option>
+            </select>
+          </div>
+          <div>
+            <label for="regPassword">Password *</label>
+            <input type="password" id="regPassword" placeholder="Create password" required>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-green" style="width: 100%; padding: 13px; font-size: 14px; font-weight: 700; border-radius: 10px; margin-top: 10px;">
+          Register & Continue ↗
+        </button>
+
+        <p style="text-align: center; font-size: 12px; color: var(--muted); margin-top: 14px;">
+          Already have an account? <a href="#" onclick="closeCreateAccountModal(); return false;" style="color: var(--green); font-weight: 700;">Sign in here</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast" id="toast" role="status"></div>
 
@@ -639,20 +812,61 @@
     }
 
     // Create account handler
-    function handleCreateAccount(event) {
-      event.preventDefault();
-      const role = document.getElementById("selectedRole").value;
-      const roleName = role === "farmer" ? "Farmer" : "Customer / Utilizer";
-      const name = prompt(`Creating new ${roleName} Account:\nEnter your Full Name:`);
-      if (!name) return;
-      const contact = prompt("Enter your 10-digit Mobile Number or Email:");
-      if (!contact) return;
+    // Modal role switching
+    function switchModalRole(role) {
+      const isFarmer = role === "farmer";
+      document.getElementById("regRole").value = role;
+      document.getElementById("modalRoleFarmer").classList.toggle("active", isFarmer);
+      document.getElementById("modalRoleUtilizer").classList.toggle("active", !isFarmer);
+      document.getElementById("modalHeaderIcon").textContent = isFarmer ? "🌾" : "🛒";
+      document.getElementById("modalNameLabel").textContent = isFarmer ? "Farmer / Farm Full Name *" : "Company / Customer Name *";
+      document.getElementById("regFullName").placeholder = isFarmer ? "e.g. Basavaraj Patil or Green Acres" : "e.g. BioEnergy Corp or Composting Ltd";
+    }
 
+    // Open Create Account Modal
+    function handleCreateAccount(event) {
+      if (event) event.preventDefault();
+      const currentRole = document.getElementById("selectedRole").value || "farmer";
+      switchModalRole(currentRole);
+      document.getElementById("createAccountModal").classList.add("active");
+      setTimeout(() => document.getElementById("regFullName").focus(), 150);
+    }
+
+    // Close Create Account Modal
+    function closeCreateAccountModal() {
+      document.getElementById("createAccountModal").classList.remove("active");
+    }
+
+    // Submit Create Account
+    function submitCreateAccount(event) {
+      event.preventDefault();
+      const name = document.getElementById("regFullName").value.trim();
+      const contact = document.getElementById("regIdentifier").value.trim();
+      const password = document.getElementById("regPassword").value;
+      const role = document.getElementById("regRole").value;
+      const district = document.getElementById("regDistrict").value;
+
+      if (!name || !contact || !password) {
+        showToast("Please fill in all required fields", "error");
+        return;
+      }
+
+      // Sync role back to main page
+      selectRole(role);
       document.getElementById("userNameInput").value = name;
       document.getElementById("userIdentifier").value = contact;
-      document.getElementById("userPassword").focus();
-      showToast(`Account created for ${name}! Please enter password and sign in.`, "success");
+      document.getElementById("userPassword").value = password;
+
+      closeCreateAccountModal();
+      showToast(`Welcome, ${name}! Your ${role === 'farmer' ? 'Farmer' : 'Customer'} account is ready.`, "success");
     }
+
+    // Escape key closes modal
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape") {
+        closeCreateAccountModal();
+      }
+    });
   </script>
 </body>
 </html>
