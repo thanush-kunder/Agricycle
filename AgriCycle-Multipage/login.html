@@ -420,6 +420,18 @@
       margin-top: 4px;
     }
 
+  
+    @keyframes shakeInput {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .shake-error {
+      animation: shakeInput 0.4s ease-in-out;
+      border-color: var(--rose) !important;
+      box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15) !important;
+    }
+
   </style>
 </head>
 <body>
@@ -739,7 +751,7 @@
 
       if (role === "farmer") {
         if (!nameInput.value) nameInput.value = "Farmer User";
-        idInput.value = "9876543210";
+        idInput.value = "farmer@agricycle.in";
         pwdInput.value = "farmer123";
         showToast("Auto-filled credentials for Farmer", "info");
       } else {
@@ -751,55 +763,84 @@
     }
 
     // Form submit handler - DYNAMIC USER REGISTRATION
-    function handleLoginSubmit(event) {
+    // Form submit handler - REAL JWT BACKEND AUTHENTICATION
+    async function handleLoginSubmit(event) {
       event.preventDefault();
       const role = document.getElementById("selectedRole").value;
-      const enteredName = document.getElementById("userNameInput").value.trim() || (role === "farmer" ? "Farmer" : "Customer");
+      const enteredName = document.getElementById("userNameInput").value.trim();
       const identifier = document.getElementById("userIdentifier").value.trim();
+      const password = document.getElementById("userPassword").value;
       const signInBtn = document.getElementById("signInBtn");
+      const pwdInput = document.getElementById("userPassword");
 
       if (!identifier) {
         showToast("Please enter your phone number or email.", "error");
+        document.getElementById("userIdentifier").focus();
+        return;
+      }
+
+      if (!password) {
+        showToast("Please enter your password.", "error");
+        pwdInput.focus();
+        pwdInput.classList.add("shake-error");
+        setTimeout(() => pwdInput.classList.remove("shake-error"), 500);
         return;
       }
 
       signInBtn.disabled = true;
-      signInBtn.textContent = "Signing you in...";
+      signInBtn.textContent = "Verifying with server...";
 
-      // Set active user state dynamically based on WHO logs in!
-      const isFarmer = role === "farmer";
-      const loggedUser = {
-        id: "usr_" + Date.now(),
-        name: enteredName,
-        role: isFarmer ? "generator" : "utilizer",
-        label: isFarmer ? `🌾 Farmer (${enteredName})` : `🛒 Customer (${enteredName})`,
-        location: isFarmer ? "Mandya, Karnataka" : "Mysore, Karnataka",
-        lat: isFarmer ? 12.5242 : 12.2958,
-        lng: isFarmer ? 76.8958 : 76.6394,
-        phone: identifier.includes("@") ? "+91 98765 43210" : identifier
-      };
+      try {
+        const response = await fetch("http://localhost:5000/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: identifier,
+            password: password
+          })
+        });
 
-      localStorage.setItem("agricycle_active_user", JSON.stringify(loggedUser));
+        const data = await response.json();
 
-      // Attempt backend authentication if Express server is running
-      fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: identifier.includes("@") ? identifier : `${identifier}@agricycle.in`,
-          password: document.getElementById("userPassword").value
-        })
-      }).catch(() => {
-        // Transparent fallback to local session mode
-      });
+        if (!response.ok || !data.success) {
+          signInBtn.disabled = false;
+          signInBtn.textContent = "Sign In ↗";
+          showToast(data.message || "Invalid credentials. Please verify your password.", "error");
+          pwdInput.focus();
+          pwdInput.classList.add("shake-error");
+          setTimeout(() => pwdInput.classList.remove("shake-error"), 500);
+          return;
+        }
 
-      setTimeout(() => {
-        showToast(`Welcome back, ${enteredName}!`, "success");
+        // STORE AUTHENTICATED JWT TOKEN AND USER
+        localStorage.setItem("agricycle_token", data.token);
+        const authUser = data.user;
+        const isFarmer = authUser.role === "generator" || role === "farmer";
+        const loggedUser = {
+          id: authUser._id,
+          name: authUser.name || enteredName || (isFarmer ? "Farmer" : "Customer"),
+          role: authUser.role || (isFarmer ? "generator" : "utilizer"),
+          label: isFarmer ? `🌾 Farmer (${authUser.name})` : `🛒 Customer (${authUser.name})`,
+          location: authUser.location?.address || (isFarmer ? "Mandya, Karnataka" : "Mysore, Karnataka"),
+          lat: authUser.location?.lat || (isFarmer ? 12.5242 : 12.2958),
+          lng: authUser.location?.lng || (isFarmer ? 76.8958 : 76.6394),
+          phone: authUser.phone || identifier,
+          email: authUser.email
+        };
+
+        localStorage.setItem("agricycle_active_user", JSON.stringify(loggedUser));
+
+        showToast(`Authentication successful! Welcome, ${authUser.name}.`, "success");
         setTimeout(() => {
-          // Direct to dashboard for farmer, or home/browse for customer
           window.location.href = isFarmer ? "dashboard.html" : "home.html";
-        }, 900);
-      }, 700);
+        }, 600);
+
+      } catch (err) {
+        console.error("Authentication error:", err);
+        signInBtn.disabled = false;
+        signInBtn.textContent = "Sign In ↗";
+        showToast("Backend authentication server unavailable. Please ensure port 5000 is running.", "error");
+      }
     }
 
     // Forgot password handler
@@ -811,7 +852,6 @@
       }
     }
 
-    // Create account handler
     // Modal role switching
     function switchModalRole(role) {
       const isFarmer = role === "farmer";
@@ -837,28 +877,76 @@
       document.getElementById("createAccountModal").classList.remove("active");
     }
 
-    // Submit Create Account
-    function submitCreateAccount(event) {
+    // Submit Create Account - SAVES TO BACKEND WITH JWT
+    async function submitCreateAccount(event) {
       event.preventDefault();
       const name = document.getElementById("regFullName").value.trim();
       const contact = document.getElementById("regIdentifier").value.trim();
       const password = document.getElementById("regPassword").value;
       const role = document.getElementById("regRole").value;
       const district = document.getElementById("regDistrict").value;
+      const submitBtn = event.target.querySelector("button[type='submit']");
 
       if (!name || !contact || !password) {
         showToast("Please fill in all required fields", "error");
         return;
       }
 
-      // Sync role back to main page
-      selectRole(role);
-      document.getElementById("userNameInput").value = name;
-      document.getElementById("userIdentifier").value = contact;
-      document.getElementById("userPassword").value = password;
+      if (password.length < 6) {
+        showToast("Password must be at least 6 characters long", "error");
+        document.getElementById("regPassword").focus();
+        return;
+      }
 
-      closeCreateAccountModal();
-      showToast(`Welcome, ${name}! Your ${role === 'farmer' ? 'Farmer' : 'Customer'} account is ready.`, "success");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Registering on server...";
+
+      try {
+        const isEmail = contact.includes("@");
+        const payload = {
+          name: name,
+          email: isEmail ? contact.toLowerCase() : `${contact.replace(/[^0-9]/g, '')}@agricycle.in`,
+          phone: contact,
+          password: password,
+          role: role === "farmer" ? "generator" : "utilizer",
+          location: { address: `${district}, Karnataka`, lat: 12.5242, lng: 76.8958 }
+        };
+
+        const res = await fetch("http://localhost:5000/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Register & Continue ↗";
+          showToast(data.message || "Registration failed. Please check inputs.", "error");
+          return;
+        }
+
+        // Store received JWT token
+        localStorage.setItem("agricycle_token", data.token);
+
+        // Sync role & fields back to main sign-in form
+        selectRole(role);
+        document.getElementById("userNameInput").value = name;
+        document.getElementById("userIdentifier").value = contact;
+        document.getElementById("userPassword").value = password;
+
+        closeCreateAccountModal();
+        showToast(`Account created for ${name}! Password verified and JWT issued.`, "success");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Register & Continue ↗";
+
+      } catch (err) {
+        console.error("Registration error:", err);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Register & Continue ↗";
+        showToast("Could not connect to backend server on port 5000.", "error");
+      }
     }
 
     // Escape key closes modal

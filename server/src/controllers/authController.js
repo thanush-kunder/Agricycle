@@ -21,33 +21,55 @@ const generateToken = (id) => {
  */
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password, role, phone, organization, location } = req.body;
+    let { name, email, password, role, phone, organization, location } = req.body;
 
     // Validate required fields
     if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide name, email, and password',
+        message: 'Please provide name, email/phone, and password',
       });
     }
 
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters',
+      });
+    }
+
+    // Normalize phone / email
+    const trimmedInput = email.trim();
+    let normalizedEmail = trimmedInput.toLowerCase();
+    if (!normalizedEmail.includes('@')) {
+      const cleanDigits = trimmedInput.replace(/[^0-9]/g, '');
+      normalizedEmail = `${cleanDigits}@agricycle.in`;
+      if (!phone) phone = trimmedInput;
+    }
+
     // Check if user already exists
-    const userExists = await User.findOne({ email: email.toLowerCase() });
+    const userExists = await User.findOne({
+      $or: [
+        { email: normalizedEmail },
+        ...(phone ? [{ phone: phone }] : [])
+      ]
+    });
+
     if (userExists) {
       return res.status(400).json({
         success: false,
-        message: 'A user with this email already exists',
+        message: 'A user with this email or phone already exists',
       });
     }
 
     // Create user in database
     const user = await User.create({
       name,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password,
       role: role || 'generator',
-      phone,
-      organization,
+      phone: phone || '',
+      organization: organization || '',
       location: location || { address: '', lat: 0, lng: 0 },
     });
 
@@ -91,12 +113,24 @@ export const loginUser = async (req, res) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide both email and password',
+        message: 'Please provide both email/phone and password',
       });
     }
 
-    // Find user by email and explicitly select password field
-    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    const trimmedInput = email.trim();
+    const cleanDigits = trimmedInput.replace(/[^0-9]/g, '');
+    const lookupQueries = [
+      { email: trimmedInput.toLowerCase() },
+      { email: `${cleanDigits}@agricycle.in` },
+      { phone: trimmedInput }
+    ];
+    if (cleanDigits.length >= 10) {
+      lookupQueries.push({ phone: cleanDigits });
+      lookupQueries.push({ phone: `+91 ${cleanDigits}` });
+    }
+
+    // Find user by email or phone and explicitly select password field
+    const user = await User.findOne({ $or: lookupQueries }).select('+password');
 
     if (!user) {
       return res.status(401).json({
@@ -148,7 +182,6 @@ export const loginUser = async (req, res) => {
  */
 export const getMe = async (req, res) => {
   try {
-    // req.user is attached by the 'protect' middleware
     return res.status(200).json({
       success: true,
       user: req.user,
