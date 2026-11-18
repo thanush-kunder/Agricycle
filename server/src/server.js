@@ -28,6 +28,10 @@ app.use(express.json());
 const uploadDir = path.join(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadDir));
 
+// Serve AgriCycle Multipage Frontend (Single unified localhost)
+const frontendDir = path.join(__dirname, '../../AgriCycle-Multipage');
+app.use(express.static(frontendDir));
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
@@ -45,12 +49,22 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Global 404 handler for undefined routes
-app.use((req, res) => {
+// Root entry point
+app.get('/', (req, res) => {
+  res.sendFile(path.join(frontendDir, 'index.html'));
+});
+
+// Dedicated 404 handler for undefined API routes
+app.all('/api/*', (req, res) => {
   res.status(404).json({
     success: false,
-    message: `Route ${req.originalUrl} not found`,
+    message: `API Route ${req.originalUrl} not found`,
   });
+});
+
+// Fallback route for frontend pages
+app.use((req, res) => {
+  res.sendFile(path.join(frontendDir, 'index.html'));
 });
 
 // Global error handling middleware

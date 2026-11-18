@@ -1,0 +1,10 @@
+{
+  "name": "agricycle",
+  "version": "1.0.0",
+  "description": "AgriCycle - Turning Agricultural Waste into Valuable Resources",
+  "scripts": {
+    "start": "node server/src/server.js",
+    "server": "npm --prefix server start",
+    "dev": "npm --prefix server run dev"
+  }
+}
