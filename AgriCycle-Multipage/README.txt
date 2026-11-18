@@ -54,9 +54,6 @@ PAGES & ARCHITECTURE:
    - Interactive Stubble Burning & Carbon Offset Calculator with sliders
    - United Nations Sustainable Development Goals (SDG 12, SDG 13, SDG 8, SDG 15) alignment
 
-8. how-it-works.html (Workflow & Paradigm Comparison):
-   - 4-Stage visual workflow (List -> AI Check -> Haversine Matching -> Dispatch)
-   - Comparison matrix: Traditional linear burning/dumping vs AgriCycle circular economy
 
 RUNNING THE PROJECT:
 1. Open the "AgriCycle-Multipage" folder in VS Code.
