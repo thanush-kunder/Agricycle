@@ -1782,12 +1782,17 @@ p {
 }
 
 .callout {
-  padding: 40px;
-  border-radius: var(--radius-lg);
-  background: var(--forest);
+  padding: clamp(36px, 4.5vw, 52px);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(135deg, var(--forest-dark, #0d281a) 0%, var(--forest, #1b492c) 100%);
   color: #ffffff;
-  margin: 35px 0 70px;
-  box-shadow: var(--shadow-md);
+  margin: 40px auto 75px;
+  width: min(1200px, 90%);
+  max-width: 1200px;
+  box-shadow: 0 16px 36px rgba(20, 61, 40, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+  text-align: left;
 }
 
 .callout h2 {
@@ -2417,4 +2422,157 @@ footer .brand {
   .nav {
     display: none;
   }
+}
+
+
+/* ==========================================================================
+   Clean Left-Aligned Navigation Layout in Topbar
+   ========================================================================== */
+.topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  padding: 0 32px !important;
+  height: 74px !important;
+  gap: 32px !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-bottom: 1px solid var(--line) !important;
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+}
+
+[data-theme="dark"] .topbar {
+  background: rgba(17, 26, 19, 0.95) !important;
+  border-bottom-color: var(--line) !important;
+}
+
+.topbar .logo,
+.topbar .brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.6px !important;
+  color: var(--forest) !important;
+  text-decoration: none !important;
+  flex: 0 0 auto !important;
+  z-index: 2 !important;
+}
+
+[data-theme="dark"] .topbar .logo,
+[data-theme="dark"] .topbar .brand {
+  color: #f1f8f3 !important;
+}
+
+.logo-mark {
+  font-size: 24px;
+}
+
+.logo-text strong {
+  color: var(--green);
+}
+
+/* Navigation Pushed to Left Next to Logo */
+.topbar .nav {
+  position: static !important;
+  transform: none !important;
+  left: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  flex: 0 1 auto !important;
+  z-index: 1 !important;
+}
+
+.nav a {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: var(--muted) !important;
+  padding: 8px 14px !important;
+  border-radius: var(--radius-sm) !important;
+  white-space: nowrap !important;
+  text-decoration: none !important;
+  transition: var(--transition) !important;
+}
+
+.nav a:hover {
+  color: var(--forest) !important;
+  background: rgba(43, 119, 74, 0.08) !important;
+}
+
+.nav a.active {
+  color: var(--green) !important;
+  background: rgba(43, 119, 74, 0.12) !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="dark"] .nav a {
+  color: #94a398 !important;
+}
+
+[data-theme="dark"] .nav a:hover {
+  color: #f1f8f3 !important;
+  background: rgba(52, 211, 153, 0.12) !important;
+}
+
+[data-theme="dark"] .nav a.active {
+  color: #34d399 !important;
+  background: rgba(52, 211, 153, 0.2) !important;
+}
+
+/* User Action Buttons Anchored to the Right */
+.topbar-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  margin-left: auto !important;
+  flex: 0 0 auto !important;
+  z-index: 2 !important;
+}
+
+@media (max-width: 1280px) and (min-width: 1081px) {
+  .topbar {
+    gap: 16px !important;
+    padding: 0 20px !important;
+  }
+  .topbar .nav {
+    gap: 4px !important;
+  }
+  .nav a {
+    padding: 6px 10px !important;
+    font-size: 12.5px !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .topbar .nav {
+    display: none !important;
+  }
+  .topbar {
+    padding: 0 18px !important;
+  }
+}
+
+/* Ensure floating chatbot bubble does not cover footer text */
+.footer-bottom {
+  padding-right: 170px !important;
+}
+
+[data-theme="dark"] .callout {
+  background: linear-gradient(135deg, #0d1e14 0%, #152c1e 100%) !important;
+  border-color: rgba(52, 211, 153, 0.2) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .callout h2 {
+  color: #f1f8f3 !important;
+}
+
+[data-theme="dark"] .callout p {
+  color: #9cb3a2 !important;
 }
