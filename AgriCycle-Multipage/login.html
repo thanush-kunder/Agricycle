@@ -815,11 +815,12 @@
         // STORE AUTHENTICATED JWT TOKEN AND USER
         localStorage.setItem("agricycle_token", data.token);
         const authUser = data.user;
-        const isFarmer = authUser.role === "generator" || role === "farmer";
+        const isFarmer = authUser.role ? (authUser.role === "generator") : (role === "farmer");
+        const userRole = authUser.role || (isFarmer ? "generator" : "utilizer");
         const loggedUser = {
           id: authUser._id,
           name: authUser.name || enteredName || (isFarmer ? "Farmer" : "Customer"),
-          role: authUser.role || (isFarmer ? "generator" : "utilizer"),
+          role: userRole,
           label: isFarmer ? `🌾 Farmer (${authUser.name})` : `🛒 Customer (${authUser.name})`,
           location: authUser.location?.address || (isFarmer ? "Mandya, Karnataka" : "Mysore, Karnataka"),
           lat: authUser.location?.lat || (isFarmer ? 12.5242 : 12.2958),

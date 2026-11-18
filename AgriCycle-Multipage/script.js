@@ -250,6 +250,19 @@ const USERS = {
 
 let currentUser = loadData("agricycle_active_user", USERS.farmer);
 
+// Maintain role integrity for active user
+if (currentUser) {
+  const isFarmer = currentUser.role === "generator";
+  const roleIcon = isFarmer ? "🌾" : "🛒";
+  const roleTitle = isFarmer ? "Farmer" : "Customer";
+  const displayName = currentUser.name && currentUser.name !== "Farmer" && currentUser.name !== "Customer"
+    ? ` (${currentUser.name})`
+    : "";
+  if (!currentUser.label || (isFarmer && !currentUser.label.includes("Farmer")) || (!isFarmer && !currentUser.label.includes("Customer"))) {
+    currentUser.label = `${roleIcon} ${roleTitle}${displayName}`;
+  }
+}
+
 // ==========================================================================
 // 2. Haversine Formula for Distance Calculation (Matching Backend)
 // ==========================================================================
@@ -293,42 +306,31 @@ if (menuToggle && navEl) {
   menuToggle.addEventListener("click", () => navEl.classList.toggle("open"));
 }
 
-// Setup Role Switcher in Topbar
+// Setup User Identity Badge in Topbar (locked to authenticated role)
 function setupRoleSwitcher() {
-  const roleBtn = document.getElementById("roleSwitcherBtn");
-  if (!roleBtn) return;
+  const roleBadge = document.getElementById("roleSwitcherBtn");
+  if (!roleBadge) return;
 
   function updateRoleDisplay() {
-    roleBtn.innerHTML = `<span class="role-dot"></span><span>${currentUser.label}</span>`;
-  }
-  updateRoleDisplay();
-
-  roleBtn.addEventListener("click", () => {
+    const isFarmer = currentUser.role === "generator";
+    const roleIcon = isFarmer ? "🌾" : "🛒";
+    const roleTitle = isFarmer ? "Farmer" : "Customer";
     const displayName = currentUser.name && currentUser.name !== "Farmer" && currentUser.name !== "Customer" 
       ? ` (${currentUser.name})` 
       : "";
+    const badgeText = currentUser.label || `${roleIcon} ${roleTitle}${displayName}`;
+    roleBadge.innerHTML = `<span class="role-dot"></span><span>${badgeText}</span>`;
+    roleBadge.setAttribute("title", `Logged in as ${currentUser.name || roleTitle} (${roleTitle})`);
+  }
+  updateRoleDisplay();
 
-    if (currentUser.role === "generator") {
-      currentUser.role = "utilizer";
-      currentUser.label = `🛒 Customer${displayName}`;
-      showToast(`Switched to Customer Perspective${displayName}`, "info");
-    } else {
-      currentUser.role = "generator";
-      currentUser.label = `🌾 Farmer${displayName}`;
-      showToast(`Switched to Farmer Perspective${displayName}`, "info");
-    }
-    saveData("agricycle_active_user", currentUser);
-    updateRoleDisplay();
-
-    // Re-calculate distances
-    listings.forEach(item => {
-      item.distanceKm = calculateDistanceKm(currentUser.lat, currentUser.lng, item.lat, item.lng);
-    });
-
-    // Re-render if on browse, dashboard, or requests
-    if (typeof renderListings === "function") renderListings();
-    if (typeof renderDashboard === "function") renderDashboard();
-    if (typeof renderRequests === "function") renderRequests();
+  // Role identity is permanent and locked to authentication
+  // Clicking badge displays user profile info rather than switching roles
+  roleBadge.addEventListener("click", () => {
+    const isFarmer = currentUser.role === "generator";
+    const roleTitle = isFarmer ? "Farmer" : "Customer";
+    const nameStr = currentUser.name ? `${currentUser.name} (${roleTitle})` : roleTitle;
+    showToast(`Active User: ${nameStr}`, "info");
   });
 }
 setupRoleSwitcher();
