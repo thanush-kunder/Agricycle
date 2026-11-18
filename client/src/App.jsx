@@ -92,7 +92,7 @@ export default function App() {
       {/* Footer */}
       <footer style={{ padding: '24px 5%', background: '#fff', borderTop: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: 'var(--muted)' }}>
         <span>AgriCycle React Client — Circular Biomass Exchange</span>
-        <span>Team CEC/CSE/2026-27/P-44</span>
+        <span style={{ fontStyle: "italic", fontWeight: 700, color: "var(--forest)" }}>AgriCycle — Turning Agricultural Waste into Valuable Resources</span>
       </footer>
     </div>
   );

@@ -1783,6 +1783,39 @@ footer .brand {
   font-size: 20px;
 }
 
+.footer-slogan {
+  font-family: 'Manrope', sans-serif;
+  font-size: 15.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  letter-spacing: -0.2px;
+}
+
+.footer-slogan .slogan-brand {
+  font-weight: 800;
+  color: var(--forest);
+  font-size: 16.5px;
+  letter-spacing: -0.4px;
+}
+
+.footer-slogan .slogan-separator {
+  color: var(--green-bright);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.footer-slogan .slogan-text {
+  background: linear-gradient(135deg, var(--forest) 10%, var(--green-bright) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 15.5px;
+}
+
+
 .toast {
   position: fixed;
   bottom: 24px;
@@ -1910,6 +1943,12 @@ footer .brand {
   }
   footer {
     flex-direction: column;
+    text-align: center;
+    gap: 14px;
+  }
+  .footer-slogan {
+    flex-wrap: wrap;
+    justify-content: center;
     text-align: center;
   }
 }
