@@ -333,6 +333,45 @@ function setupRoleSwitcher() {
 }
 setupRoleSwitcher();
 
+// Setup Auth (Sign In / Sign Out) in Topbar
+function setupAuthButton() {
+  const token = localStorage.getItem("agricycle_token");
+  const user = JSON.parse(localStorage.getItem("agricycle_active_user") || "null");
+  const isSignedIn = !!(token || (user && user.name));
+
+  const authBtns = document.querySelectorAll(".topbar-actions a, #authNavBtn");
+  authBtns.forEach(btn => {
+    const text = btn.textContent.trim().toLowerCase();
+    if (text === "sign in" || text === "sign out" || btn.id === "authNavBtn") {
+      btn.id = "authNavBtn";
+      if (isSignedIn) {
+        // User IS signed in: remove "Sign In" option and replace with "Sign Out"
+        btn.textContent = "Sign Out";
+        btn.href = "#";
+        btn.title = `Signed in as ${user?.name || "User"}. Click to Sign Out`;
+        btn.classList.add("btn-signout");
+        btn.onclick = function(e) {
+          e.preventDefault();
+          localStorage.removeItem("agricycle_token");
+          localStorage.removeItem("agricycle_active_user");
+          showToast("Signed out successfully.", "info");
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 350);
+        };
+      } else {
+        // Not signed in: show "Sign In"
+        btn.textContent = "Sign In";
+        btn.href = "index.html";
+        btn.classList.remove("btn-signout");
+        btn.onclick = null;
+      }
+    }
+  });
+}
+setupAuthButton();
+
+
 // ==========================================================================
 // 4. Browse Waste Page & Leaflet Map Integration
 // ==========================================================================

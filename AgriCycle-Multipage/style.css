@@ -1955,3 +1955,16 @@ footer .brand {
     text-align: center;
   }
 }
+
+
+.btn-signout {
+  color: var(--muted) !important;
+  border-color: var(--line-strong) !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-signout:hover {
+  color: var(--rose) !important;
+  border-color: var(--rose) !important;
+  background: var(--rose-soft) !important;
+}
