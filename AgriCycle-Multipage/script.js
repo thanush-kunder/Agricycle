@@ -333,39 +333,32 @@ function setupRoleSwitcher() {
 }
 setupRoleSwitcher();
 
-// Setup Auth (Sign In / Sign Out) in Topbar
-function setupAuthButton() {
-  const token = localStorage.getItem("agricycle_token");
-  const user = JSON.parse(localStorage.getItem("agricycle_active_user") || "null");
-  const isSignedIn = !!(token || (user && user.name));
+// Global Sign Out handler
+function handleSignOut(event) {
+  if (event) event.preventDefault();
+  localStorage.removeItem("agricycle_token");
+  localStorage.removeItem("agricycle_active_user");
+  if (typeof showToast === "function") {
+    showToast("Signed out successfully. Returning to sign-in...", "info");
+  }
+  setTimeout(() => {
+    window.location.href = "index.html";
+  }, 350);
+}
+window.handleSignOut = handleSignOut;
 
+// Setup Auth Button in Topbar (Always ensure Sign Out on interior pages)
+function setupAuthButton() {
   const authBtns = document.querySelectorAll(".topbar-actions a, #authNavBtn");
   authBtns.forEach(btn => {
     const text = btn.textContent.trim().toLowerCase();
     if (text === "sign in" || text === "sign out" || btn.id === "authNavBtn") {
       btn.id = "authNavBtn";
-      if (isSignedIn) {
-        // User IS signed in: remove "Sign In" option and replace with "Sign Out"
-        btn.textContent = "Sign Out";
-        btn.href = "#";
-        btn.title = `Signed in as ${user?.name || "User"}. Click to Sign Out`;
-        btn.classList.add("btn-signout");
-        btn.onclick = function(e) {
-          e.preventDefault();
-          localStorage.removeItem("agricycle_token");
-          localStorage.removeItem("agricycle_active_user");
-          showToast("Signed out successfully.", "info");
-          setTimeout(() => {
-            window.location.href = "index.html";
-          }, 350);
-        };
-      } else {
-        // Not signed in: show "Sign In"
-        btn.textContent = "Sign In";
-        btn.href = "index.html";
-        btn.classList.remove("btn-signout");
-        btn.onclick = null;
-      }
+      btn.textContent = "Sign Out";
+      btn.href = "index.html";
+      btn.classList.add("btn-signout");
+      btn.title = "Click to Sign Out of AgriCycle";
+      btn.onclick = handleSignOut;
     }
   });
 }
