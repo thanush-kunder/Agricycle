@@ -2426,14 +2426,15 @@ footer .brand {
 
 
 /* ==========================================================================
-   Proper Balanced Topbar Layout (Centered Navigation & Aligned Actions)
+   Clean Left-Aligned Navigation Layout in Topbar
    ========================================================================== */
 .topbar {
   display: flex !important;
   align-items: center !important;
-  justify-content: space-between !important;
+  justify-content: flex-start !important;
   padding: 0 32px !important;
   height: 74px !important;
+  gap: 32px !important;
   background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(16px) !important;
   -webkit-backdrop-filter: blur(16px) !important;
@@ -2450,21 +2451,21 @@ footer .brand {
 
 .topbar .logo,
 .topbar .brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.6px;
-  color: var(--forest);
-  text-decoration: none;
-  flex: 0 0 auto;
-  z-index: 2;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.6px !important;
+  color: var(--forest) !important;
+  text-decoration: none !important;
+  flex: 0 0 auto !important;
+  z-index: 2 !important;
 }
 
 [data-theme="dark"] .topbar .logo,
 [data-theme="dark"] .topbar .brand {
-  color: #f1f8f3;
+  color: #f1f8f3 !important;
 }
 
 .logo-mark {
@@ -2475,16 +2476,17 @@ footer .brand {
   color: var(--green);
 }
 
-/* Centered Navigation in Topbar */
+/* Navigation Pushed to Left Next to Logo */
 .topbar .nav {
-  position: absolute !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
+  position: static !important;
+  transform: none !important;
+  left: auto !important;
   display: flex !important;
   align-items: center !important;
   gap: 8px !important;
-  z-index: 1 !important;
   margin: 0 !important;
+  flex: 0 1 auto !important;
+  z-index: 1 !important;
 }
 
 .nav a {
@@ -2523,6 +2525,7 @@ footer .brand {
   background: rgba(52, 211, 153, 0.2) !important;
 }
 
+/* User Action Buttons Anchored to the Right */
 .topbar-actions {
   display: flex !important;
   align-items: center !important;
@@ -2532,11 +2535,12 @@ footer .brand {
   z-index: 2 !important;
 }
 
-@media (max-width: 1260px) and (min-width: 1041px) {
+@media (max-width: 1280px) and (min-width: 1081px) {
+  .topbar {
+    gap: 16px !important;
+    padding: 0 20px !important;
+  }
   .topbar .nav {
-    position: static !important;
-    transform: none !important;
-    margin: 0 auto !important;
     gap: 4px !important;
   }
   .nav a {
@@ -2545,7 +2549,7 @@ footer .brand {
   }
 }
 
-@media (max-width: 1040px) {
+@media (max-width: 1080px) {
   .topbar .nav {
     display: none !important;
   }
