@@ -333,6 +333,38 @@ function setupRoleSwitcher() {
 }
 setupRoleSwitcher();
 
+// Global Sign Out handler
+function handleSignOut(event) {
+  if (event) event.preventDefault();
+  localStorage.removeItem("agricycle_token");
+  localStorage.removeItem("agricycle_active_user");
+  if (typeof showToast === "function") {
+    showToast("Signed out successfully. Returning to sign-in...", "info");
+  }
+  setTimeout(() => {
+    window.location.href = "index.html";
+  }, 350);
+}
+window.handleSignOut = handleSignOut;
+
+// Setup Auth Button in Topbar (Always ensure Sign Out on interior pages)
+function setupAuthButton() {
+  const authBtns = document.querySelectorAll(".topbar-actions a, #authNavBtn");
+  authBtns.forEach(btn => {
+    const text = btn.textContent.trim().toLowerCase();
+    if (text === "sign in" || text === "sign out" || btn.id === "authNavBtn") {
+      btn.id = "authNavBtn";
+      btn.textContent = "Sign Out";
+      btn.href = "index.html";
+      btn.classList.add("btn-signout");
+      btn.title = "Click to Sign Out of AgriCycle";
+      btn.onclick = handleSignOut;
+    }
+  });
+}
+setupAuthButton();
+
+
 // ==========================================================================
 // 4. Browse Waste Page & Leaflet Map Integration
 // ==========================================================================
