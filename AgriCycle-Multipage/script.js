@@ -306,7 +306,7 @@ if (menuToggle && navEl) {
   menuToggle.addEventListener("click", () => navEl.classList.toggle("open"));
 }
 
-// Setup User Identity Badge in Topbar (locked to authenticated role)
+// Setup User Identity Badge in Topbar (locked to authenticated role with running name ticker)
 function setupRoleSwitcher() {
   const roleBadge = document.getElementById("roleSwitcherBtn");
   if (!roleBadge) return;
@@ -315,11 +315,27 @@ function setupRoleSwitcher() {
     const isFarmer = currentUser.role === "generator";
     const roleIcon = isFarmer ? "🌾" : "🛒";
     const roleTitle = isFarmer ? "Farmer" : "Customer";
-    const displayName = currentUser.name && currentUser.name !== "Farmer" && currentUser.name !== "Customer" 
-      ? ` (${currentUser.name})` 
+    const rawName = currentUser.name && currentUser.name !== "Farmer" && currentUser.name !== "Customer" 
+      ? currentUser.name 
       : "";
-    const badgeText = currentUser.label || `${roleIcon} ${roleTitle}${displayName}`;
-    roleBadge.innerHTML = `<span class="role-dot"></span><span>${badgeText}</span>`;
+
+    if (rawName) {
+      roleBadge.innerHTML = `
+        <span class="role-dot"></span>
+        <span class="role-type-tag">${roleIcon} ${roleTitle}</span>
+        <span class="role-divider">|</span>
+        <span class="role-marquee-container" title="Active Account: ${rawName}">
+          <span class="role-marquee-track">
+            <span class="role-marquee-item">${rawName}</span>
+            <span class="role-marquee-spacer">•</span>
+            <span class="role-marquee-item">${rawName}</span>
+            <span class="role-marquee-spacer">•</span>
+          </span>
+        </span>
+      `;
+    } else {
+      roleBadge.innerHTML = `<span class="role-dot"></span><span class="role-type-tag">${roleIcon} ${roleTitle}</span>`;
+    }
     roleBadge.setAttribute("title", `Logged in as ${currentUser.name || roleTitle} (${roleTitle})`);
   }
   updateRoleDisplay();

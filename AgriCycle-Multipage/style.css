@@ -214,7 +214,7 @@ p {
 .role-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 6px 14px;
   background: var(--surface);
   border: 1px solid var(--line-strong);
@@ -224,12 +224,16 @@ p {
   color: var(--forest);
   cursor: default;
   user-select: none;
+  white-space: nowrap;
+  max-width: 270px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: var(--transition);
 }
 
 .role-pill:hover {
-  background: rgba(46, 125, 50, 0.05);
-  border-color: var(--line-strong);
+  background: rgba(46, 125, 50, 0.06);
+  border-color: var(--green);
 }
 
 .role-pill .role-dot {
@@ -237,6 +241,66 @@ p {
   height: 8px;
   border-radius: 50%;
   background: var(--green-bright);
+  flex-shrink: 0;
+  box-shadow: 0 0 6px rgba(46, 125, 50, 0.4);
+}
+
+.role-pill .role-type-tag {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--forest);
+  letter-spacing: -0.1px;
+}
+
+.role-pill .role-divider {
+  color: var(--line-strong);
+  font-weight: 300;
+  flex-shrink: 0;
+  opacity: 0.6;
+  margin: 0 1px;
+}
+
+.role-marquee-container {
+  display: inline-flex;
+  overflow: hidden;
+  max-width: 125px;
+  position: relative;
+  mask-image: linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%);
+}
+
+.role-marquee-track {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  animation: roleTicker 7s linear infinite;
+}
+
+.role-pill:hover .role-marquee-track {
+  animation-play-state: paused;
+}
+
+.role-marquee-item {
+  color: var(--forest-dark, #163e23);
+  font-weight: 600;
+  padding: 0 4px;
+}
+
+.role-marquee-spacer {
+  color: var(--green);
+  font-size: 9px;
+  padding: 0 5px;
+  opacity: 0.7;
+}
+
+@keyframes roleTicker {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .menu-toggle {
