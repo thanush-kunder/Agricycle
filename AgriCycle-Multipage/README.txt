@@ -14,7 +14,6 @@ PAGES & ARCHITECTURE:
    - ⚡ 1-Click Quick Demo Login buttons for fast evaluator testing
    - "Create account" and "Forgot password?" links
    - "Explore Platform as Guest ↗" button to view without signing in
-   - Toll-free farmer assistance helpline (1800-425-AGRI)
 
 2. home.html (Platform Showcase & Circular Overview):
    - Hero banner with circular mission statement
