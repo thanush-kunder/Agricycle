@@ -4,17 +4,17 @@ import {
   getNearbyListings,
   getMatchStats,
 } from '../controllers/matchController.js';
-import { protect } from '../middlewares/authMiddleware.js';
+import { optionalAuth } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
-// Public — supply/demand statistics for heatmap
+// Public — supply & demand statistics for heatmap
 router.get('/stats', getMatchStats);
 
-// Public — nearby listings with proper distance-based pagination
+// Public — nearby listings with database-level distance-based pagination
 router.get('/nearby', getNearbyListings);
 
-// Private — personalised scored recommendations for logged-in utilizers
-router.get('/recommendations', protect, getRecommendations);
+// Open to all users (with optional user context if authenticated) — personalized scored recommendations
+router.get('/recommendations', optionalAuth, getRecommendations);
 
 export default router;

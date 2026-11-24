@@ -1,5 +1,5 @@
 import { Listing } from '../models/index.js';
-import { calculateHaversineDistance, isValidCoordinates } from '../utils/haversine.js';
+import { calculateHaversineDistance, isValidCoordinates, extractCoordinates } from '../utils/haversine.js';
 
 /**
  * @desc    Create a new agricultural waste listing
@@ -173,12 +173,14 @@ export const getAllListings = async (req, res) => {
     // Calculate exact Haversine distance if user provided coordinates
     if (hasCoordinates) {
       listings = listings.map((item) => {
-        const itemLng = item.location?.coordinates?.[0];
-        const itemLat = item.location?.coordinates?.[1];
-
+        const coords = extractCoordinates(item.location);
         let distanceKm = null;
-        if (itemLng !== undefined && itemLat !== undefined) {
-          distanceKm = calculateHaversineDistance(userLat, userLng, itemLat, itemLng);
+        if (coords) {
+          try {
+            distanceKm = calculateHaversineDistance(userLat, userLng, coords.lat, coords.lng);
+          } catch {
+            distanceKm = null;
+          }
         }
 
         return {

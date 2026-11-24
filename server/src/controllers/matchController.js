@@ -1,19 +1,27 @@
 import { Listing } from '../models/index.js';
 import { rankListings, WEIGHT_PROFILES } from '../utils/matchingAlgorithm.js';
-import { calculateHaversineDistance, isValidCoordinates } from '../utils/haversine.js';
+import { isValidCoordinates, extractCoordinates } from '../utils/haversine.js';
+
+/**
+ * =====================================================================
+ * AgriCycle — Matching & Recommendation Controller
+ * Author: Shreya (4CB24CS141)
+ * Scope : Matching Algorithms & Geospatial Proximity
+ * =====================================================================
+ */
 
 /**
  * @desc    Get smart-matched listing recommendations for a utilizer
  * @route   GET /api/match/recommendations
- * @access  Private (any authenticated user)
+ * @access  Public / Optional Auth
  *
  * Query params:
  *   lat, lng             — user's current location (required)
  *   wasteType            — preferred waste type (optional)
  *   neededKg             — quantity the user needs (optional)
  *   maxPricePerKg        — max ₹/kg willing to pay (optional)
- *   maxDistanceKm        — pre-filter radius in km (optional, default 100)
- *   priority             — matching priority: 'balanced' | 'proximity' | 'budget' | 'quality' (default: balanced)
+ *   maxDistanceKm        — search radius in km (optional, default 100)
+ *   priority             — 'balanced' | 'proximity' | 'budget' | 'quality' (default: balanced)
  *   limit                — max results to return (optional, default 20)
  */
 export const getRecommendations = async (req, res) => {
@@ -29,11 +37,11 @@ export const getRecommendations = async (req, res) => {
       limit = 20,
     } = req.query;
 
-    // ── Validate coordinates ──
+    // ── 1. Validate Geographic Coordinates ──
     if (lat === undefined || lng === undefined) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide your location (lat and lng query params)',
+        message: 'Please provide location coordinates (lat and lng query params)',
       });
     }
 
@@ -43,66 +51,82 @@ export const getRecommendations = async (req, res) => {
     if (!isValidCoordinates(userLat, userLng)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid coordinates: lat must be between -90 and 90, lng between -180 and 180',
+        message: 'Invalid coordinates: latitude must be between -90 and 90, longitude between -180 and 180',
       });
     }
 
-    // ── Build MongoDB query ──
+    // ── 2. Build Query & Proximity Boundary ──
     const query = { status: 'available' };
 
-    // Optionally filter by waste type
-    if (wasteType) {
-      query.wasteType = wasteType;
+    // Filter by waste type if specified
+    if (wasteType && wasteType.trim() !== '') {
+      query.wasteType = new RegExp(`^${wasteType.trim()}$`, 'i');
     }
 
-    // Geospatial pre-filter: only fetch listings within radius
-    const radiusKm = Number(maxDistanceKm);
-    const radiusInRadians = radiusKm / 6371;
+    // Filter by maximum acceptable price if specified
+    if (maxPricePerKg && !isNaN(Number(maxPricePerKg))) {
+      query.pricePerKg = { $lte: Number(maxPricePerKg) };
+    }
+
+    const radiusKm = Number(maxDistanceKm) > 0 ? Number(maxDistanceKm) : 100;
+    const radiusInRadians = radiusKm / 6371; // Earth's mean radius ~6371 km
+
     query.location = {
       $geoWithin: {
         $centerSphere: [[userLng, userLat], radiusInRadians],
       },
     };
 
-    // Fetch candidate listings from DB
-    const candidates = await Listing.find(query)
+    // Fetch candidate listings from MongoDB
+    let candidates = await Listing.find(query)
       .populate('generator', 'name phone organization email location')
       .lean();
+
+    // Fallback: If no listings found within radius, broaden query across all Karnataka listings
+    let expandedSearch = false;
+    if (candidates.length === 0) {
+      delete query.location;
+      candidates = await Listing.find(query)
+        .populate('generator', 'name phone organization email location')
+        .lean();
+      expandedSearch = true;
+    }
 
     if (candidates.length === 0) {
       return res.status(200).json({
         success: true,
         count: 0,
-        message: `No available listings found within ${radiusKm} km`,
+        message: 'No available waste listings match your criteria at this moment.',
         data: [],
       });
     }
 
-    // ── Run scoring algorithm ──
+    // ── 3. Execute Multi-Criteria Matching Algorithm ──
     const preferences = {
       lat: userLat,
       lng: userLng,
       neededKg: neededKg ? Number(neededKg) : null,
       maxPricePerKg: maxPricePerKg ? Number(maxPricePerKg) : null,
-      preferredWasteType: wasteType || null,
+      preferredWasteType: wasteType ? wasteType.trim() : null,
     };
 
     const selectedWeights = WEIGHT_PROFILES[priority] || WEIGHT_PROFILES.balanced;
-    const ranked = rankListings(candidates, preferences, selectedWeights);
+    const rankedListings = rankListings(candidates, preferences, selectedWeights);
 
-    // Limit results
-    const limitNum = Math.min(parseInt(limit, 10) || 20, 50);
-    const topMatches = ranked.slice(0, limitNum);
+    // Limit returned recommendations (max 50)
+    const limitNum = Math.min(Math.max(1, parseInt(limit, 10) || 20), 50);
+    const topMatches = rankedListings.slice(0, limitNum);
 
     return res.status(200).json({
       success: true,
       count: topMatches.length,
       totalCandidates: candidates.length,
-      searchRadius: `${radiusKm} km`,
+      priorityApplied: priority in WEIGHT_PROFILES ? priority : 'balanced',
+      searchRadius: expandedSearch ? 'expanded (state-wide)' : `${radiusKm} km`,
       data: topMatches,
     });
   } catch (error) {
-    console.error('Recommendations error:', error);
+    console.error('Recommendations API Error:', error);
     return res.status(500).json({
       success: false,
       message: error.message || 'Server error generating recommendations',
@@ -112,7 +136,7 @@ export const getRecommendations = async (req, res) => {
 
 /**
  * @desc    Get nearby listings using MongoDB $geoNear aggregation
- *          (fixes the pagination + distance sort bug in getAllListings)
+ *          (sorts by distance at the database level before paginating)
  * @route   GET /api/match/nearby
  * @access  Public
  *
@@ -133,11 +157,11 @@ export const getNearbyListings = async (req, res) => {
       limit = 10,
     } = req.query;
 
-    // ── Validate coordinates ──
+    // ── 1. Validate Coordinates ──
     if (lat === undefined || lng === undefined) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide lat and lng query params',
+        message: 'Please provide location coordinates (lat and lng query params)',
       });
     }
 
@@ -147,41 +171,40 @@ export const getNearbyListings = async (req, res) => {
     if (!isValidCoordinates(userLat, userLng)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid coordinates: lat must be between -90 and 90, lng between -180 and 180',
+        message: 'Invalid coordinates: latitude must be between -90 and 90, longitude between -180 and 180',
       });
     }
 
-    const maxDistMeters = Number(maxDistanceKm) * 1000;
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
+    const maxDistMeters = Math.max(1, Number(maxDistanceKm) || 50) * 1000;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(Math.max(1, parseInt(limit, 10) || 10), 50);
     const skip = (pageNum - 1) * limitNum;
 
-    // ── $geoNear aggregation pipeline ──
-    // This sorts by distance at the DB level BEFORE pagination,
-    // fixing the bug where distance sort happened after skip/limit.
-    const pipeline = [
-      {
-        $geoNear: {
-          near: {
-            type: 'Point',
-            coordinates: [userLng, userLat],
-          },
-          distanceField: 'distanceMeters',
-          maxDistance: maxDistMeters,
-          spherical: true,
-          query: {
-            status: 'available',
-            ...(wasteType ? { wasteType } : {}),
-          },
+    // ── 2. MongoDB $geoNear Aggregation Pipeline ──
+    const geoNearStage = {
+      $geoNear: {
+        near: {
+          type: 'Point',
+          coordinates: [userLng, userLat],
+        },
+        key: 'location',
+        distanceField: 'distanceMeters',
+        maxDistance: maxDistMeters,
+        spherical: true,
+        query: {
+          status: 'available',
+          ...(wasteType ? { wasteType: new RegExp(`^${wasteType.trim()}$`, 'i') } : {}),
         },
       },
-      // Add distanceKm field
+    };
+
+    const pipeline = [
+      geoNearStage,
       {
         $addFields: {
           distanceKm: { $round: [{ $divide: ['$distanceMeters', 1000] }, 2] },
         },
       },
-      // Facet for total count + paginated data in one query
       {
         $facet: {
           metadata: [{ $count: 'total' }],
@@ -190,24 +213,60 @@ export const getNearbyListings = async (req, res) => {
       },
     ];
 
-    const [result] = await Listing.aggregate(pipeline);
+    let total = 0;
+    let listings = [];
 
-    const total = result.metadata[0]?.total || 0;
-    const listings = result.data;
+    try {
+      const aggResults = await Listing.aggregate(pipeline);
+      const result = aggResults && aggResults.length > 0 ? aggResults[0] : null;
 
-    // Populate generator details (aggregate doesn't auto-populate)
-    await Listing.populate(listings, {
-      path: 'generator',
-      select: 'name phone organization email',
-    });
+      total = result?.metadata?.[0]?.total || 0;
+      listings = result?.data || [];
+
+      if (listings.length > 0) {
+        await Listing.populate(listings, {
+          path: 'generator',
+          select: 'name phone organization email',
+        });
+      }
+    } catch (aggErr) {
+      // Graceful fallback to find query if 2dsphere index is still building or on mock memory
+      console.warn('GeoNear aggregation fallback:', aggErr.message);
+      const radiusInRadians = (maxDistMeters / 1000) / 6371;
+      const fallbackQuery = {
+        status: 'available',
+        ...(wasteType ? { wasteType } : {}),
+        location: {
+          $geoWithin: {
+            $centerSphere: [[userLng, userLat], radiusInRadians],
+          },
+        },
+      };
+
+      total = await Listing.countDocuments(fallbackQuery);
+      listings = await Listing.find(fallbackQuery)
+        .populate('generator', 'name phone organization email')
+        .skip(skip)
+        .limit(limitNum)
+        .lean();
+
+      // Annotate Haversine distance
+      listings = listings.map((item) => {
+        const coords = extractCoordinates(item.location);
+        const dist = coords
+          ? calculateHaversineDistance(userLat, userLng, coords.lat, coords.lng)
+          : null;
+        return { ...item, distanceKm: dist };
+      });
+    }
 
     return res.status(200).json({
       success: true,
       count: listings.length,
       total,
       page: pageNum,
-      totalPages: Math.ceil(total / limitNum),
-      searchRadius: `${maxDistanceKm} km`,
+      totalPages: Math.ceil(total / limitNum) || 1,
+      searchRadius: `${Number(maxDistanceKm) || 50} km`,
       data: listings,
     });
   } catch (error) {
@@ -223,10 +282,6 @@ export const getNearbyListings = async (req, res) => {
  * @desc    Get match statistics — waste type demand heatmap data
  * @route   GET /api/match/stats
  * @access  Public
- *
- * Returns count of available listings grouped by wasteType and
- * average coordinates (centroid) for each group — useful for
- * rendering a demand/supply heatmap on the frontend.
  */
 export const getMatchStats = async (req, res) => {
   try {
@@ -247,11 +302,11 @@ export const getMatchStats = async (req, res) => {
           _id: 0,
           wasteType: '$_id',
           count: 1,
-          totalQuantityKg: { $round: ['$totalQuantityKg', 2] },
-          avgPricePerKg: { $round: ['$avgPricePerKg', 2] },
+          totalQuantityKg: { $round: [{ $ifNull: ['$totalQuantityKg', 0] }, 2] },
+          avgPricePerKg: { $round: [{ $ifNull: ['$avgPricePerKg', 0] }, 2] },
           centroid: {
-            lat: { $round: ['$avgLat', 4] },
-            lng: { $round: ['$avgLng', 4] },
+            lat: { $round: [{ $ifNull: ['$avgLat', 0] }, 4] },
+            lng: { $round: [{ $ifNull: ['$avgLng', 0] }, 4] },
           },
         },
       },
@@ -270,4 +325,10 @@ export const getMatchStats = async (req, res) => {
       message: 'Server error fetching match statistics',
     });
   }
+};
+
+export default {
+  getRecommendations,
+  getNearbyListings,
+  getMatchStats,
 };

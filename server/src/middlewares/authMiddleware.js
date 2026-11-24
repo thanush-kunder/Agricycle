@@ -47,6 +47,27 @@ export const protect = async (req, res, next) => {
 };
 
 /**
+ * Middleware to optionally attach authenticated user if token is present,
+ * without failing or blocking guest requests.
+ */
+export const optionalAuth = async (req, res, next) => {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'agricycle_default_secret_dev');
+      req.user = await User.findById(decoded.id).select('-password');
+    } catch {
+      // Token invalid or expired, continue as guest
+      req.user = null;
+    }
+  }
+  next();
+};
+
+/**
  * Middleware to restrict access to specific user roles
  * Example usage: authorize('admin') or authorize('generator', 'admin')
  */
@@ -60,4 +81,10 @@ export const authorize = (...roles) => {
     }
     next();
   };
+};
+
+export default {
+  protect,
+  optionalAuth,
+  authorize,
 };

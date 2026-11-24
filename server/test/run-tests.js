@@ -24,7 +24,7 @@ const __dirname = path.dirname(__filename);
 
 // Import application and modules
 import app from '../src/server.js';
-import { calculateHaversineDistance, isValidCoordinates } from '../src/utils/haversine.js';
+import { calculateHaversineDistance, isValidCoordinates, extractCoordinates } from '../src/utils/haversine.js';
 import {
   calcDistanceScore,
   calcPriceScore,
@@ -150,12 +150,24 @@ it('should return 0 km for identical coordinates', () => {
   assert.equal(dist, 0);
 });
 
-it('should validate geographical coordinates within bounds', () => {
+it('should validate geographical coordinates within bounds and handle numeric strings', () => {
   assert.equal(isValidCoordinates(12.9716, 77.5946), true);
+  assert.equal(isValidCoordinates('12.9716', '77.5946'), true); // Numeric string from query param
   assert.equal(isValidCoordinates(91, 77.5946), false); // Lat > 90
   assert.equal(isValidCoordinates(-91, 77.5946), false); // Lat < -90
   assert.equal(isValidCoordinates(12.9716, 185), false); // Lng > 180
   assert.equal(isValidCoordinates('invalid', 77.5946), false);
+  assert.equal(isValidCoordinates(null, 77.5946), false);
+  assert.equal(isValidCoordinates(undefined, undefined), false);
+});
+
+it('should correctly extract coordinates from both GeoJSON and object formats', () => {
+  const geoJson = { type: 'Point', coordinates: [77.5946, 12.9716] };
+  const obj = { lat: 12.9716, lng: 77.5946 };
+  assert.deepEqual(extractCoordinates(geoJson), { lat: 12.9716, lng: 77.5946 });
+  assert.deepEqual(extractCoordinates(obj), { lat: 12.9716, lng: 77.5946 });
+  assert.equal(extractCoordinates(null), null);
+  assert.equal(extractCoordinates({ address: 'Karnataka' }), null);
 });
 
 // ── 2. Matching Algorithm Tests ──
@@ -221,6 +233,20 @@ it('should compute composite match score and rank listings accurately', () => {
   assert.ok(ranked[0].matchScore > ranked[1].matchScore);
 });
 
+it('should safely handle listings with missing fields without returning NaN', () => {
+  const edgeListings = [
+    { _id: 'edge1', title: 'Bare listing' }, // no location, no price, no qty
+    { _id: 'edge2', title: 'Listing with invalid date', createdAt: 'not-a-date', pricePerKg: null },
+    { _id: 'edge3', title: 'Listing with object location', location: { lat: 12.97, lng: 77.59 } }
+  ];
+  const ranked = rankListings(edgeListings, { lat: 12.97, lng: 77.59 });
+  assert.equal(ranked.length, 3);
+  for (const item of ranked) {
+    assert.equal(isNaN(item.matchScore), false, `Score for ${item._id} must not be NaN`);
+    assert.ok(item.matchScore >= 0 && item.matchScore <= 1, 'Score must be between 0 and 1');
+  }
+});
+
 // ── 3. Image Upload Middleware Tests ──
 console.log('\n📸 [3/5] Testing Image Upload & Validation Infrastructure:');
 
@@ -275,6 +301,15 @@ await itAsync('should provide circular economy advisory from /api/ai/chat', asyn
   assert.equal(res.status, 200);
   assert.equal(res.data.success, true);
   assert.ok(res.data.reply.length > 20);
+});
+
+await itAsync('should reject missing coordinates at /api/match/recommendations with 400', async () => {
+  const res = await dispatch(app, {
+    url: '/api/match/recommendations',
+    method: 'GET',
+  });
+  assert.equal(res.status, 400);
+  assert.equal(res.data.success, false);
 });
 
 await itAsync('should return 404 JSON for unknown routes', async () => {

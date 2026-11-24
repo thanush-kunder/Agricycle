@@ -7,7 +7,7 @@
  */
 
 // Mean Earth radius in kilometers (IUGG recommended value)
-const EARTH_RADIUS_KM = 6371.0;
+export const EARTH_RADIUS_KM = 6371.0;
 
 /**
  * Converts degrees to radians.
@@ -16,24 +16,66 @@ const EARTH_RADIUS_KM = 6371.0;
  * @returns {number} radians
  */
 export function degreesToRadians(degrees) {
-  return (degrees * Math.PI) / 180;
+  return (Number(degrees) * Math.PI) / 180;
 }
 
 /**
  * Validates geographic latitude and longitude coordinates.
+ * Accepts numbers or valid numeric strings.
  * - Latitude must be a finite number between -90 and +90 degrees.
  * - Longitude must be a finite number between -180 and +180 degrees.
  *
- * @param {number} lat - Latitude
- * @param {number} lng - Longitude
+ * @param {number|string} lat - Latitude
+ * @param {number|string} lng - Longitude
  * @returns {boolean} true if valid
  */
 export function isValidCoordinates(lat, lng) {
-  if (typeof lat !== 'number' || typeof lng !== 'number') return false;
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
-  if (lat < -90 || lat > 90) return false;
-  if (lng < -180 || lng > 180) return false;
+  if (lat === null || lat === undefined || lng === null || lng === undefined) {
+    return false;
+  }
+  const nLat = Number(lat);
+  const nLng = Number(lng);
+
+  if (isNaN(nLat) || isNaN(nLng) || !Number.isFinite(nLat) || !Number.isFinite(nLng)) {
+    return false;
+  }
+  if (nLat < -90 || nLat > 90) return false;
+  if (nLng < -180 || nLng > 180) return false;
   return true;
+}
+
+/**
+ * Extracts normalized { lat, lng } from different location formats:
+ * - GeoJSON Point: { type: 'Point', coordinates: [lng, lat] }
+ * - Object format: { lat, lng } or { latitude, longitude }
+ *
+ * @param {Object} location
+ * @returns {{ lat: number, lng: number }|null}
+ */
+export function extractCoordinates(location) {
+  if (!location) return null;
+
+  // 1. GeoJSON Point format: coordinates: [longitude, latitude]
+  if (Array.isArray(location.coordinates) && location.coordinates.length >= 2) {
+    const lng = Number(location.coordinates[0]);
+    const lat = Number(location.coordinates[1]);
+    if (isValidCoordinates(lat, lng)) {
+      return { lat, lng };
+    }
+  }
+
+  // 2. Direct lat / lng properties
+  const latVal = location.lat !== undefined ? location.lat : location.latitude;
+  const lngVal = location.lng !== undefined ? location.lng : location.longitude;
+  if (latVal !== undefined && lngVal !== undefined) {
+    const lat = Number(latVal);
+    const lng = Number(lngVal);
+    if (isValidCoordinates(lat, lng)) {
+      return { lat, lng };
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -48,10 +90,10 @@ export function isValidCoordinates(lat, lng) {
  * Where:
  *   φ is latitude, λ is longitude, R is Earth's mean radius (6371 km).
  *
- * @param {number} lat1 - Latitude of Point 1 in decimal degrees
- * @param {number} lon1 - Longitude of Point 1 in decimal degrees
- * @param {number} lat2 - Latitude of Point 2 in decimal degrees
- * @param {number} lon2 - Longitude of Point 2 in decimal degrees
+ * @param {number|string} lat1 - Latitude of Point 1 in decimal degrees
+ * @param {number|string} lon1 - Longitude of Point 1 in decimal degrees
+ * @param {number|string} lat2 - Latitude of Point 2 in decimal degrees
+ * @param {number|string} lon2 - Longitude of Point 2 in decimal degrees
  * @returns {number} Distance in kilometers, rounded to 2 decimal places
  * @throws {Error} If any coordinate is invalid or non-numeric
  */
@@ -95,9 +137,9 @@ export function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
  * point and a search radius in kilometers.
  * Useful for fast coarse pre-filtering before fine Haversine calculation.
  *
- * @param {number} lat - Center latitude
- * @param {number} lng - Center longitude
- * @param {number} radiusKm - Search radius in km
+ * @param {number|string} lat - Center latitude
+ * @param {number|string} lng - Center longitude
+ * @param {number|string} radiusKm - Search radius in km
  * @returns {{ minLat: number, maxLat: number, minLng: number, maxLng: number }}
  */
 export function calculateBoundingBox(lat, lng, radiusKm) {
@@ -111,8 +153,9 @@ export function calculateBoundingBox(lat, lng, radiusKm) {
 
   // 1 degree latitude is approximately 111.045 km
   const deltaLat = nRadius / 111.045;
-  // 1 degree longitude depends on latitude
-  const deltaLng = nRadius / (111.045 * Math.cos(degreesToRadians(nLat)));
+  // 1 degree longitude depends on latitude (cosine scaling)
+  const cosLat = Math.cos(degreesToRadians(nLat));
+  const deltaLng = cosLat === 0 ? 180 : nRadius / (111.045 * Math.abs(cosLat));
 
   return {
     minLat: Math.max(-90, Number((nLat - deltaLat).toFixed(6))),
@@ -130,18 +173,20 @@ export function calculateBoundingBox(lat, lng, radiusKm) {
  * @returns {string} Formatted distance
  */
 export function formatDistance(distanceKm) {
-  if (typeof distanceKm !== 'number' || isNaN(distanceKm) || distanceKm < 0) {
+  const dist = Number(distanceKm);
+  if (isNaN(dist) || dist < 0) {
     return '0 m';
   }
-  if (distanceKm < 1) {
-    return `${Math.round(distanceKm * 1000)} m`;
+  if (dist < 1) {
+    return `${Math.round(dist * 1000)} m`;
   }
-  return `${distanceKm.toFixed(1)} km`;
+  return `${dist.toFixed(1)} km`;
 }
 
 export default {
   calculateHaversineDistance,
   isValidCoordinates,
+  extractCoordinates,
   calculateBoundingBox,
   degreesToRadians,
   formatDistance,
