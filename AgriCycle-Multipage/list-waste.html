@@ -100,104 +100,52 @@
     </section>
 
     <section class="container">
-      <div class="form-wrap">
-        <form class="form" id="listingForm">
-          <!-- Crop Residue Type -->
-          <label>
-            Residue / Waste Type *
-            <select id="wasteType" required>
-              <option value="">Choose a supported crop residue</option>
-              <option value="Paddy Straw">Paddy Straw (Rice Residue)</option>
-              <option value="Coconut Husk">Coconut Husk & Coir</option>
-              <option value="Sugarcane Bagasse">Sugarcane Bagasse</option>
-              <option value="Areca Leaf">Areca Leaf Sheaths</option>
-              <option value="Cotton Stalk">Cotton Stalk Biomass</option>
-              <option value="Corn Stover">Corn Stover / Maize Residue</option>
-              <option value="Wheat Straw">Wheat Straw</option>
-              <option value="Banana Residue">Banana Stem Residue</option>
-              <option value="Other">Other Agricultural By-Product</option>
-            </select>
-          </label>
+      <div class="form-wrap" style="max-width:860px">
+        
+        <!-- Mode Switcher Tabs -->
+        <div class="assessment-tabs">
+          <button type="button" class="assessment-tab-btn active" id="tabAiAssessment" onclick="switchListingMode('ai')">
+            <span>🔬</span> <span>AI Quality Assessment & Intelligent Valuation (Recommended)</span>
+          </button>
+          <button type="button" class="assessment-tab-btn" id="tabQuickListing" onclick="switchListingMode('manual')">
+            <span>📝</span> <span>Standard Listing Form</span>
+          </button>
+        </div>
 
-          <!-- Listing / Transaction Type -->
-          <label>
-            Exchange Model *
-            <select id="listingType" required>
-              <option value="">Choose transaction model</option>
-              <option value="Sell">Sell (Set price in ₹ / kg)</option>
-              <option value="Exchange">Exchange (Barter for compost/manure)</option>
-              <option value="Free">Free (Zero cost for pickup)</option>
-            </select>
-          </label>
+        <!-- ================================================================== -->
+        <!-- 1. AI QUALITY ASSESSMENT & INTELLIGENT VALUATION WORKFLOW (7-STEP) -->
+        <!-- ================================================================== -->
+        <div id="aiAssessmentContainer">
 
-          <!-- Quantity Available -->
-          <label>
-            Total Available Quantity (kg) *
-            <input type="number" id="quantity" min="10" placeholder="e.g. 1200" required>
-          </label>
-
-          <!-- Price per kg -->
-          <label>
-            Price per kg (₹)
-            <input type="number" id="price" min="0" step="0.1" placeholder="0 for Free/Exchange">
-          </label>
-
-          <!-- Quick Karnataka District Selector -->
-          <label>
-            District Preset
-            <select id="karnatakaDistricts">
-              <option value="">Select Karnataka District</option>
-              <option value="Mandya, Karnataka">Mandya (Paddy / Sugarcane belt)</option>
-              <option value="Udupi, Karnataka">Udupi (Coconut / Areca belt)</option>
-              <option value="Belagavi, Karnataka">Belagavi (Sugarcane / Maize)</option>
-              <option value="Karwar, Karnataka">Karwar / Uttara Kannada</option>
-              <option value="Sirsi, Karnataka">Sirsi (Areca / Spices)</option>
-              <option value="Dharwad, Karnataka">Dharwad (Cotton / Wheat)</option>
-              <option value="Mysore, Karnataka">Mysore Rural</option>
-              <option value="Shimoga, Karnataka">Shimoga</option>
-            </select>
-          </label>
-
-          <!-- Location & GPS -->
-          <label>
-            Address / Village / GPS *
-            <div style="display:flex;gap:6px">
-              <input type="text" id="location" placeholder="e.g. Mandya Village Road" required>
-              <button type="button" class="btn btn-outline btn-sm" id="useGpsBtn" title="Grab GPS coordinates">📍 GPS</button>
+          <!-- STEP 1: Upload Agricultural Waste Image -->
+          <div class="assessment-step-card" id="step1Card">
+            <div class="step-header">
+              <span class="step-num-badge">1</span>
+              <div class="step-title-group">
+                <h3>Upload Agricultural Waste Image</h3>
+                <p>Upload a clear photo of your crop residue batch. Our AI Vision system will inspect physical condition, fiber texture, and surface purity.</p>
+              </div>
             </div>
-          </label>
 
-          <!-- 3-Way Photo Upload Section (Device, Camera, URL) -->
-          <div class="full form-group photo-upload-section">
-            <span class="photo-section-heading">📷 Residue Batch Photo (Choose Any Option)</span>
-            <p class="helper-text">
-              Add a clear photo of your crop residue. Real photos help buyers verify batch condition and qualify for <b>AI Grade A</b> certification.
-            </p>
-
-            <!-- 3 Distinct Action Buttons -->
-            <div class="photo-methods-grid" id="photoMethodButtons">
-              <button type="button" class="photo-method-btn" id="btnChooseDevice" onclick="triggerDeviceUpload()">
+            <div class="photo-methods-grid" id="aiPhotoMethodButtons">
+              <button type="button" class="photo-method-btn" onclick="triggerDeviceUpload()">
                 <span class="method-icon">📁</span>
                 <strong>Choose from Device</strong>
                 <small>Select from gallery or files</small>
               </button>
 
-              <button type="button" class="photo-method-btn" id="btnTakePhoto" onclick="triggerCameraCapture()">
+              <button type="button" class="photo-method-btn" onclick="triggerCameraCapture()">
                 <span class="method-icon">📸</span>
                 <strong>Take a Photo</strong>
-                <small>Open phone camera or webcam</small>
+                <small>Open camera or webcam</small>
               </button>
 
-              <button type="button" class="photo-method-btn" id="btnUrlOption" onclick="toggleUrlInput()">
+              <button type="button" class="photo-method-btn" onclick="toggleUrlInput()">
                 <span class="method-icon">🔗</span>
                 <strong>Add Image URL</strong>
-                <small>Paste web image link</small>
+                <small>Paste image web link</small>
               </button>
             </div>
-
-            <!-- Hidden File & Camera Input Elements -->
-            <input type="file" id="deviceFileInput" accept="image/*" style="display:none" onchange="handleFileSelected(event)">
-            <input type="file" id="cameraFileInput" accept="image/*" capture="environment" style="display:none" onchange="handleFileSelected(event)">
 
             <!-- Expandable Image URL Input -->
             <div class="url-input-wrap hidden" id="urlInputContainer" style="margin-top:14px">
@@ -207,97 +155,382 @@
               </div>
             </div>
 
-            <!-- Camera Viewfinder Modal (Webcam Stream) -->
-            <div class="camera-modal hidden" id="cameraModal">
-              <div class="camera-card">
-                <div class="camera-header">
-                  <h4>📷 Live Camera Capture</h4>
-                  <button type="button" class="modal-close" onclick="closeCameraModal()">&times;</button>
-                </div>
-                <video id="cameraVideo" autoplay playsinline style="width:100%;border-radius:10px;background:#000;max-height:280px;object-fit:cover"></video>
-                <canvas id="cameraCanvas" style="display:none"></canvas>
-                <div class="camera-actions" style="display:flex;gap:10px;margin-top:12px;justify-content:center">
-                  <button type="button" class="btn btn-green" onclick="captureLiveSnapshot()">Capture Snapshot 📸</button>
-                  <button type="button" class="btn btn-outline" onclick="closeCameraModal()">Cancel</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- Helpful Warning if Camera is Unavailable or Denied -->
-            <div class="camera-alert hidden" id="cameraAlertBox">
-              <span class="alert-icon">⚠️</span>
-              <div class="alert-content">
-                <strong>Camera Access Unavailable or Denied</strong>
-                <p id="cameraAlertMessage">Camera access was not permitted. You can still easily choose an image from your device gallery or paste an image URL.</p>
-              </div>
-              <button type="button" class="alert-dismiss" onclick="dismissCameraAlert()">✕</button>
-            </div>
-
             <!-- Photo Preview Card with Replace and Remove -->
-            <div class="photo-preview-wrap hidden" id="photoPreviewWrap">
+            <div class="photo-preview-wrap hidden" id="photoPreviewWrap" style="margin-top:16px">
               <div class="preview-card">
                 <div class="preview-img-box">
                   <img id="previewImageEl" src="" alt="Residue batch preview">
                 </div>
                 <div class="preview-info">
                   <strong id="previewFileName">batch-photo.jpg</strong>
-                  <span class="preview-meta">✓ Photo attached & ready for AI verification</span>
+                  <span class="preview-meta">✓ Photo attached & ready for AI vision analysis</span>
                   <div class="preview-actions">
-                    <button type="button" class="btn btn-outline btn-sm" onclick="replacePhoto()">
-                      🔄 Replace Photo
-                    </button>
-                    <button type="button" class="btn btn-danger btn-sm" onclick="removePhoto()">
-                      🗑 Remove Photo
-                    </button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="replacePhoto()">🔄 Replace</button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removePhoto()">🗑 Remove</button>
                   </div>
+                </div>
+              </div>
+
+              <div style="margin-top:16px;display:flex;justify-content:flex-end">
+                <button type="button" class="btn btn-green" id="btnRunAiVision" onclick="runAiVisionAnalysis()" style="padding:12px 24px;font-size:15px">
+                  ⚡ Run AI Vision Analysis ➔
+                </button>
+              </div>
+            </div>
+
+            <p class="helper-text" style="margin-top:12px;font-size:12px;color:var(--muted)">
+              Supported formats: JPEG, PNG, WebP (Max 10 MB). For best grading results, ensure natural lighting and clear view of residue fibers.
+            </p>
+          </div>
+
+          <!-- STEP 2: AI Image Analysis Progress Banner -->
+          <div class="assessment-step-card hidden" id="aiLoadingCard" style="text-align:center;padding:32px 20px">
+            <div style="font-size:36px;margin-bottom:12px;animation:spin 2s linear infinite">🔬</div>
+            <h3 style="color:var(--forest);font-size:18px;margin-bottom:6px" id="aiLoadingTitle">AI is analysing your agricultural waste...</h3>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px" id="aiLoadingSubtitle">Inspecting color signatures, fiber uniformity, and surface impurities via Google Gemini Vision & CV models...</p>
+            <div class="ai-progress-wrap" style="max-width:400px;margin:0 auto">
+              <div class="ai-progress-bar" id="aiFlowProgressBar" style="width:20%"></div>
+            </div>
+          </div>
+
+          <!-- STEP 3: Visual Observations & Category Confirmation -->
+          <div class="assessment-step-card hidden" id="step3Card">
+            <div class="step-header">
+              <span class="step-num-badge">2</span>
+              <div class="step-title-group">
+                <h3>Visual Observations & Crop Confirmation</h3>
+                <p>AI identified the visible characteristics below. Verify or correct the detected waste category before calculating the final report.</p>
+              </div>
+            </div>
+
+            <div style="background:var(--paper);padding:16px;border-radius:var(--radius-md);border:1px solid var(--line);margin-bottom:16px">
+              <label style="font-weight:700;font-size:14px;display:block;margin-bottom:8px">
+                Detected Waste Category:
+                <select id="aiDetectedCategorySelect" style="width:100%;margin-top:6px;font-weight:700">
+                  <option value="Rice Straw">Rice Straw (Paddy Straw)</option>
+                  <option value="Wheat Straw">Wheat Straw</option>
+                  <option value="Sugarcane Bagasse">Sugarcane Bagasse</option>
+                  <option value="Coconut Husk">Coconut Husk & Coir</option>
+                  <option value="Groundnut Shells">Groundnut Shells</option>
+                  <option value="Corn Stalks">Corn Stalks / Stover</option>
+                  <option value="Banana Waste">Banana Waste / Pseudostem</option>
+                  <option value="Areca Leaf">Areca Leaf Sheaths</option>
+                  <option value="Cotton Stalk">Cotton Stalk Biomass</option>
+                  <option value="Other Agricultural Residues">Other Agricultural Residues</option>
+                </select>
+              </label>
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)">
+                <span>AI Confidence: <strong id="aiConfidenceBadge" style="color:var(--forest)">94%</strong></span>
+                <span>•</span>
+                <span id="aiModelSourceBadge">Source: Gemini Vision API</span>
+              </div>
+            </div>
+
+            <!-- Observations Grid -->
+            <div class="obs-grid">
+              <div class="obs-item">
+                <span class="obs-label">Surface Colour</span>
+                <span class="obs-value" id="obsColorText">Golden Yellow</span>
+              </div>
+              <div class="obs-item">
+                <span class="obs-label">Visible Condition</span>
+                <span class="obs-value" id="obsConditionText">Good</span>
+              </div>
+              <div class="obs-item">
+                <span class="obs-label">Visible Damage</span>
+                <span class="obs-value" id="obsDamageText">Low</span>
+              </div>
+              <div class="obs-item">
+                <span class="obs-label">Contamination</span>
+                <span class="obs-value" id="obsContaminationText">Low</span>
+              </div>
+              <div class="obs-item">
+                <span class="obs-label">Preliminary Grade</span>
+                <span class="obs-badge grade-a" id="obsPreliminaryGradeBadge">Grade A</span>
+              </div>
+              <div class="obs-item">
+                <span class="obs-label">Microbial / Mould</span>
+                <span class="obs-value" id="obsFungalText">Not visibly detected</span>
+              </div>
+            </div>
+
+            <div class="ai-disclaimer-card">
+              <span>ℹ️</span>
+              <span><b>Notice:</b> Visual observations are non-invasive surface inspections. Internal moisture, chemical composition, or microbial load cannot be established from photos and are evaluated in Step 3.</span>
+            </div>
+          </div>
+
+          <!-- STEP 4: Farmer Quality Information Form -->
+          <div class="assessment-step-card hidden" id="step4Card">
+            <div class="step-header">
+              <span class="step-num-badge">3</span>
+              <div class="step-title-group">
+                <h3>Farmer Quality Information</h3>
+                <p>Provide physical batch measurements to calculate your certified quality score and market valuation.</p>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:16px">
+              <label>
+                Available Quantity (kg) *
+                <input type="number" id="farmerQtyInput" min="10" placeholder="e.g. 1200" required value="1000">
+              </label>
+
+              <div>
+                <label>
+                  Moisture Percentage (%)
+                  <input type="number" id="farmerMoistureInput" min="0" max="100" step="0.5" placeholder="e.g. 14.0 (if known)">
+                </label>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-top:4px;cursor:pointer">
+                  <input type="checkbox" id="moistureUnknownCheckbox" onchange="toggleMoistureUnknown(this)">
+                  <span>I don't have a moisture meter (Mark as Unknown)</span>
+                </label>
+              </div>
+
+              <label>
+                Storage Condition *
+                <select id="farmerStorageSelect" required>
+                  <option value="Covered storage">Covered storage (Tarpaulin/Shed) — Recommended</option>
+                  <option value="Indoor storage">Indoor dry warehouse</option>
+                  <option value="Open storage">Open-air field storage</option>
+                  <option value="Other">Other temporary storage</option>
+                </select>
+              </label>
+
+              <label>
+                Harvest or Collection Date *
+                <input type="date" id="farmerHarvestDateInput" required>
+              </label>
+            </div>
+
+            <div style="margin-top:14px">
+              <label>
+                District & Village Location *
+                <div style="display:flex;gap:8px;margin-top:4px">
+                  <input type="text" id="farmerLocationInput" placeholder="e.g. Mandya Village Road, Karnataka" style="flex:1" required>
+                  <button type="button" class="btn btn-outline btn-sm" onclick="grabGpsForFarmer()">📍 GPS</button>
+                </div>
+              </label>
+            </div>
+
+            <div style="margin-top:14px">
+              <label>
+                Additional Description / Physical Measurements (Optional)
+                <textarea id="farmerNotesInput" rows="2" placeholder="e.g. Baled tightly in rectangular 25kg bundles; sun-dried for 4 days after harvest." style="width:100%;margin-top:4px"></textarea>
+              </label>
+            </div>
+
+            <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;cursor:pointer">
+              <input type="checkbox" id="farmerDriedCheckbox" checked>
+              <span>Residue has been thoroughly sun-dried prior to storage</span>
+            </label>
+
+            <div style="margin-top:20px;display:flex;justify-content:flex-end">
+              <button type="button" class="btn btn-green" id="btnCalculateReport" onclick="submitFinalQualityAssessment()" style="padding:14px 28px;font-size:15px;font-weight:700">
+                🔬 Calculate Quality Grade & Market Valuation ➔
+              </button>
+            </div>
+          </div>
+
+          <!-- STEP 5, 6, 7: Final Quality Report & Valuation -->
+          <div class="ai-report-box hidden" id="finalReportBox">
+            <div class="report-headline">
+              <div>
+                <span class="report-badge-pill">AgriCycle Certified AI Quality Report</span>
+                <span style="font-size:12px;color:var(--muted);margin-left:8px" id="reportRulesVersionBadge">Rules v1.0.0</span>
+              </div>
+              <div style="font-size:12px;color:var(--muted)">
+                Generated: <strong id="reportDateText">Today</strong>
+              </div>
+            </div>
+
+            <!-- Grade & Completeness Banner -->
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;background:var(--surface);padding:18px;border-radius:var(--radius-md);border:1px solid var(--line)">
+              <div class="report-grade-display">
+                <div class="grade-stamp" id="reportGradeStamp">A</div>
+                <div class="grade-meta">
+                  <h2 id="reportGradeTitle">Grade A (High Quality)</h2>
+                  <p id="reportCategoryText">Rice Straw • Verified Agricultural Waste</p>
+                </div>
+              </div>
+
+              <div style="text-align:right">
+                <div style="font-size:28px;font-weight:900;color:var(--forest)" id="reportScoreText">88<small style="font-size:14px">/100</small></div>
+                <span style="font-size:12px;font-weight:700;color:var(--green)">Quality Score</span>
+                <div style="font-size:11.5px;color:var(--muted);margin-top:2px" id="reportCompletenessText">Assessment Completeness: 100%</div>
+              </div>
+            </div>
+
+            <!-- 100-Point Score Breakdown -->
+            <div style="margin-top:20px">
+              <h4 style="font-size:14px;font-weight:800;color:var(--forest);margin-bottom:8px">📊 Explainable Quality Score Breakdown (0–100)</h4>
+              <div class="score-breakdown-list">
+                <div class="score-row">
+                  <span class="score-name">Visible Appearance</span>
+                  <div class="score-bar-bg"><div class="score-bar-fill" id="barVisual" style="width:100%"></div></div>
+                  <span class="score-value" id="valVisual">30/30</span>
+                </div>
+                <div class="score-row">
+                  <span class="score-name">Damage Assessment</span>
+                  <div class="score-bar-bg"><div class="score-bar-fill" id="barDamage" style="width:100%"></div></div>
+                  <span class="score-value" id="valDamage">25/25</span>
+                </div>
+                <div class="score-row">
+                  <span class="score-name">Contamination Cleanness</span>
+                  <div class="score-bar-bg"><div class="score-bar-fill" id="barContam" style="width:100%"></div></div>
+                  <span class="score-value" id="valContam">25/25</span>
+                </div>
+                <div class="score-row">
+                  <span class="score-name">Moisture & Storage</span>
+                  <div class="score-bar-bg"><div class="score-bar-fill" id="barMoist" style="width:100%"></div></div>
+                  <span class="score-value" id="valMoist">20/20</span>
                 </div>
               </div>
             </div>
 
-            <!-- Hidden Input for Form Submission -->
-            <input type="hidden" id="finalPhotoData" value="">
-            <input type="hidden" id="imageUrl" value="">
-          </div>
+            <!-- Circular Recommendations Grid -->
+            <div style="margin-top:24px">
+              <h4 style="font-size:14px;font-weight:800;color:var(--forest);margin-bottom:10px">💡 Recommended High-Value Applications</h4>
+              <div class="recs-grid" id="reportRecsContainer">
+                <!-- Dynamically rendered -->
+              </div>
+            </div>
 
-          <!-- AI CNN Image Quality Verification Module (Samarth's Model) -->
-          <div class="ai-verification-card">
-            <div class="ai-header">
-              <h4>🔬 AI Deep Learning Quality Assessment (CNN)</h4>
-              <button type="button" class="btn btn-light btn-sm" id="testAiVerificationBtn">
-                Run CNN Quality Check ⚡
+            <!-- Valuation Banner -->
+            <div class="valuation-banner">
+              <div class="valuation-left">
+                <span>Intelligent Market Valuation</span>
+                <div class="valuation-total" id="reportValuationTotal">₹3,000.00</div>
+                <div class="valuation-rate">
+                  Estimated Price: <strong id="reportValuationRate">₹2.50 / kg</strong> for <strong id="reportValuationQty">1,200 kg</strong>
+                </div>
+                <div class="valuation-basis" id="reportValuationBasis">
+                  Base benchmark: ₹2.50/kg for Grade A (High Quality)
+                </div>
+              </div>
+              <div style="text-align:right">
+                <span class="obs-badge grade-a" id="reportReliabilityBadge">High Reliability</span>
+                <div style="font-size:11px;color:#d3e6db;margin-top:6px">Calculated using AgriCycle Reference Tables</div>
+              </div>
+            </div>
+
+            <!-- Action Controls -->
+            <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap">
+              <button type="button" class="btn btn-green" id="btnPublishListing" onclick="publishReportAsListing()" style="flex:1;padding:14px;font-size:15px;font-weight:700">
+                🚀 Publish as Verified Listing to Marketplace
+              </button>
+              <button type="button" class="btn btn-outline" onclick="saveReportOnly()" style="padding:14px 20px">
+                💾 Save to Dashboard
+              </button>
+              <button type="button" class="btn btn-light" onclick="resetAssessmentWorkflow()" style="padding:14px 18px">
+                🔄 Assess Another Batch
               </button>
             </div>
-            <p style="font-size:12px;color:#d3e6db;margin-bottom:10px">
-              Our automated convolutional neural network inspects fiber structure, assesses moisture percentage, and detects contamination to grant an official <b>Verified Grade A</b> badge.
-            </p>
-            <div class="ai-progress-wrap">
-              <div class="ai-progress-bar" id="aiProgressBar"></div>
-            </div>
+          </div>
+        </div>
 
-            <!-- Dynamic Verification Result -->
-            <div class="ai-result-panel hidden" id="aiResultPanel">
-              <div>
-                <span>Purity Grade</span>
-                <b id="aiGradeText">Grade A (High)</b>
+        <!-- ================================================================== -->
+        <!-- 2. QUICK MANUAL LISTING FORM (PRESERVED FOR BACKWARD COMPATIBILITY)-->
+        <!-- ================================================================== -->
+        <div id="manualListingContainer" class="hidden">
+          <form class="form" id="listingForm">
+            <!-- Crop Residue Type -->
+            <label>
+              Residue / Waste Type *
+              <select id="wasteType" required>
+                <option value="">Choose a supported crop residue</option>
+                <option value="Rice Straw">Rice Straw (Paddy Straw)</option>
+                <option value="Wheat Straw">Wheat Straw</option>
+                <option value="Sugarcane Bagasse">Sugarcane Bagasse</option>
+                <option value="Coconut Husk">Coconut Husk & Coir</option>
+                <option value="Groundnut Shells">Groundnut Shells</option>
+                <option value="Corn Stalks">Corn Stalks / Stover</option>
+                <option value="Banana Waste">Banana Stem Residue</option>
+                <option value="Areca Leaf">Areca Leaf Sheaths</option>
+                <option value="Cotton Stalk">Cotton Stalk Biomass</option>
+                <option value="Other Agricultural Residues">Other Agricultural By-Product</option>
+              </select>
+            </label>
+
+            <!-- Listing / Transaction Type -->
+            <label>
+              Exchange Model *
+              <select id="listingType" required>
+                <option value="">Choose transaction model</option>
+                <option value="Sell">Sell (Set price in ₹ / kg)</option>
+                <option value="Exchange">Exchange (Barter for compost/manure)</option>
+                <option value="Free">Free (Zero cost for pickup)</option>
+              </select>
+            </label>
+
+            <!-- Quantity Available -->
+            <label>
+              Total Available Quantity (kg) *
+              <input type="number" id="quantity" min="10" placeholder="e.g. 1200" required>
+            </label>
+
+            <!-- Price per kg -->
+            <label>
+              Price per kg (₹)
+              <input type="number" id="price" min="0" step="0.1" placeholder="0 for Free/Exchange">
+            </label>
+
+            <!-- Quick Karnataka District Selector -->
+            <label>
+              District Preset
+              <select id="karnatakaDistricts">
+                <option value="">Select Karnataka District</option>
+                <option value="Mandya, Karnataka">Mandya (Paddy / Sugarcane belt)</option>
+                <option value="Udupi, Karnataka">Udupi (Coconut / Areca belt)</option>
+                <option value="Belagavi, Karnataka">Belagavi (Sugarcane / Maize)</option>
+                <option value="Karwar, Karnataka">Karwar / Uttara Kannada</option>
+                <option value="Sirsi, Karnataka">Sirsi (Areca / Spices)</option>
+                <option value="Dharwad, Karnataka">Dharwad (Cotton / Wheat)</option>
+                <option value="Mysore, Karnataka">Mysore Rural</option>
+                <option value="Shimoga, Karnataka">Shimoga</option>
+              </select>
+            </label>
+
+            <!-- Location & GPS -->
+            <label>
+              Address / Village / GPS *
+              <div style="display:flex;gap:6px">
+                <input type="text" id="location" placeholder="e.g. Mandya Village Road" required>
+                <button type="button" class="btn btn-outline btn-sm" id="useGpsBtn" title="Grab GPS coordinates">📍 GPS</button>
               </div>
-              <div>
-                <span>Estimated Moisture</span>
-                <b id="aiMoistureText">12.4% (Optimal)</b>
-              </div>
-              <div>
-                <span>CNN Confidence</span>
-                <b id="aiConfidenceText">96.8%</b>
-              </div>
+            </label>
+
+            <div class="full">
+              <p class="form-note">
+                ✓ Standard manual listing. For automated certification and valuation, use the AI Quality Assessment tab above.
+              </p>
+              <button class="btn btn-green" type="submit" style="width:100%;padding:14px">Publish Standard Residue Listing ↗</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Hidden input elements and modals -->
+        <input type="file" id="deviceFileInput" accept="image/*" style="display:none" onchange="handleFileSelected(event)">
+        <input type="file" id="cameraFileInput" accept="image/*" capture="environment" style="display:none" onchange="handleFileSelected(event)">
+        <input type="hidden" id="finalPhotoData" value="">
+        <input type="hidden" id="imageUrl" value="">
+
+        <!-- Camera Viewfinder Modal (Webcam Stream) -->
+        <div class="camera-modal hidden" id="cameraModal">
+          <div class="camera-card">
+            <div class="camera-header">
+              <h4>📷 Live Camera Capture</h4>
+              <button type="button" class="modal-close" onclick="closeCameraModal()">&times;</button>
+            </div>
+            <video id="cameraVideo" autoplay playsinline style="width:100%;border-radius:10px;background:#000;max-height:280px;object-fit:cover"></video>
+            <canvas id="cameraCanvas" style="display:none"></canvas>
+            <div class="camera-actions" style="display:flex;gap:10px;margin-top:12px;justify-content:center">
+              <button type="button" class="btn btn-green" onclick="captureLiveSnapshot()">Capture Snapshot 📸</button>
+              <button type="button" class="btn btn-outline" onclick="closeCameraModal()">Cancel</button>
             </div>
           </div>
+        </div>
 
-          <div class="full">
-            <p class="form-note">
-              ✓ Submissions are stored locally in your browser and automatically synchronized with the Express backend when online.
-            </p>
-            <button class="btn btn-green" type="submit" style="width:100%;padding:14px">Publish Residue Listing ↗</button>
-          </div>
-        </form>
       </div>
     </section>
   </main>

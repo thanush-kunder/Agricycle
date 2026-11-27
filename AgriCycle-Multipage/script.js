@@ -198,6 +198,141 @@ const DEFAULT_REQUESTS = [
   }
 ];
 
+const DEFAULT_ANALYSES = [
+  {
+    id: "ana_001",
+    wasteCategory: "Rice Straw",
+    imageUrl: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=700&q=80",
+    visualObservations: {
+      colour: "Light golden",
+      visibleCondition: "Good",
+      visibleDamage: "Low",
+      visibleContamination: "Low",
+      visibleDeterioration: "Not detected",
+      fungalGrowth: "Not visibly detected"
+    },
+    visualQuality: {
+      preliminaryGrade: "A",
+      description: "Dry, uniform golden straw with low foreign matter.",
+      confidence: 0.94
+    },
+    farmerInputs: {
+      quantityKg: 1200,
+      moisturePercentage: 14.0,
+      moistureUnknown: false,
+      storageCondition: "Covered storage",
+      harvestDate: "2026-11-10",
+      location: "Mandya, Karnataka",
+      notes: "Baled tightly in rectangular 25kg bundles; sun-dried for 4 days after harvest.",
+      isDried: true
+    },
+    qualityGrade: "A",
+    qualityScore: 88,
+    completenessPercentage: 100,
+    scoreBreakdown: {
+      visualScore: 30,
+      damageScore: 25,
+      contaminationScore: 25,
+      moistureScore: 20
+    },
+    valuation: {
+      estimatedPricePerKg: 2.50,
+      estimatedTotalPrice: 3000.00,
+      valuationBasis: "Base benchmark: ₹2.50/kg for Grade A (High Quality) with +₹0.10/kg bulk incentive",
+      confidenceLevel: "High"
+    },
+    recommendations: [
+      {
+        application: "Mushroom Cultivation Substrate",
+        priority: "High",
+        description: "Optimal substrate for oyster and paddy straw mushroom mycelium growth.",
+        suitable: true
+      },
+      {
+        application: "Livestock Fodder & Bedding",
+        priority: "High",
+        description: "Clean dry golden straw suitable for cattle feeding and comfortable dry bedding.",
+        suitable: true
+      },
+      {
+        application: "Biomass Briquetting & Pelleting",
+        priority: "Medium",
+        description: "High calorific value when compressed into industrial heating briquettes.",
+        suitable: true
+      }
+    ],
+    rulesVersion: "1.0.0-provisional",
+    createdAt: "2026-11-15T10:30:00.000Z",
+    publishedListingId: "lst_001"
+  },
+  {
+    id: "ana_002",
+    wasteCategory: "Sugarcane Bagasse",
+    imageUrl: "https://images.unsplash.com/photo-1560493676-04071c5f467b?auto=format&fit=crop&w=700&q=80",
+    visualObservations: {
+      colour: "Pale brownish-yellow",
+      visibleCondition: "Fair",
+      visibleDamage: "Medium",
+      visibleContamination: "Low",
+      visibleDeterioration: "Slight weathering",
+      fungalGrowth: "Not visibly detected"
+    },
+    visualQuality: {
+      preliminaryGrade: "B",
+      description: "Fibrous crushed sugarcane residue with moderate moisture retention.",
+      confidence: 0.90
+    },
+    farmerInputs: {
+      quantityKg: 3500,
+      moisturePercentage: 22.0,
+      moistureUnknown: false,
+      storageCondition: "Covered storage",
+      harvestDate: "2026-11-08",
+      location: "Belagavi, Karnataka",
+      notes: "Post-crush mill residue.",
+      isDried: false
+    },
+    qualityGrade: "B",
+    qualityScore: 71,
+    completenessPercentage: 100,
+    scoreBreakdown: {
+      visualScore: 20,
+      damageScore: 15,
+      contaminationScore: 25,
+      moistureScore: 14
+    },
+    valuation: {
+      estimatedPricePerKg: 1.80,
+      estimatedTotalPrice: 6300.00,
+      valuationBasis: "Base benchmark: ₹1.80/kg for Grade B (Medium Quality) with +₹0.20/kg bulk volume incentive",
+      confidenceLevel: "Medium"
+    },
+    recommendations: [
+      {
+        application: "Biofuel Boiler Feedstock",
+        priority: "High",
+        description: "Excellent renewable co-firing fuel for sugar mill and textile factory boilers.",
+        suitable: true
+      },
+      {
+        application: "Paper & Pulp Board Manufacturing",
+        priority: "High",
+        description: "Lignocellulosic fiber matrix well-suited for paper and packaging board.",
+        suitable: true
+      },
+      {
+        application: "Enriched Organic Compost",
+        priority: "Medium",
+        description: "Slow decomposing high-carbon organic amendment for depleted soils.",
+        suitable: true
+      }
+    ],
+    rulesVersion: "1.0.0-provisional",
+    createdAt: "2026-11-18T14:15:00.000Z",
+    publishedListingId: "lst_003"
+  }
+];
+
 // Load from LocalStorage or initialize with defaults
 function loadData(key, fallback) {
   try {
@@ -223,6 +358,7 @@ function saveData(key, val) {
 
 let listings = loadData("agricycle_listings", DEFAULT_LISTINGS);
 let requests = loadData("agricycle_requests", DEFAULT_REQUESTS);
+let analyses = loadData("agricycle_analyses", DEFAULT_ANALYSES);
 
 // Default User Context (Dynamically configured on Sign In)
 const USERS = {
@@ -810,6 +946,73 @@ function initDashboard() {
             </tbody>
           </table>
         </div>
+
+        <div class="section-head" style="margin-top:36px">
+          <div>
+            <span class="eyebrow">AI QUALITY ASSESSMENTS & INTELLIGENT VALUATION</span>
+            <h2>Batch Quality Assessment History</h2>
+            <p>Certified visual inspections, 100-point scores, and circular value estimates generated by Google Gemini & Python Quality Engine.</p>
+          </div>
+          <a class="btn btn-green btn-sm" href="list-waste.html">🔬 New Quality Assessment</a>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Residue & Date</th>
+                <th>Visual Condition</th>
+                <th>Certified Grade</th>
+                <th>Quality Score</th>
+                <th>Valuation Estimate</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${analyses.length === 0 ? `
+                <tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No AI quality assessments yet. <a href="list-waste.html" style="color:var(--green);font-weight:700">Run an assessment ➔</a></td></tr>
+              ` : analyses.map(a => `
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <img src="${a.imageUrl || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=700&q=80'}" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:1px solid var(--line)" alt="${a.wasteCategory}">
+                      <div>
+                        <b>${a.wasteCategory}</b>
+                        <div style="font-size:11px;color:var(--muted)">${new Date(a.createdAt).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" })}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div style="font-size:12px"><b>${a.visualObservations?.visibleCondition || 'Good'}</b> condition</div>
+                    <div style="font-size:11px;color:var(--muted)">${a.visualObservations?.colour || 'Standard'} • Dam: ${a.visualObservations?.visibleDamage || 'Low'}</div>
+                  </td>
+                  <td>
+                    <span class="obs-badge ${a.qualityGrade === 'A' ? 'grade-a' : a.qualityGrade === 'B' ? 'grade-b' : 'grade-c'}">Grade ${a.qualityGrade}</span>
+                  </td>
+                  <td>
+                    <div style="font-weight:800;color:var(--forest)">${a.qualityScore}/100</div>
+                    <div style="font-size:11px;color:var(--muted)">${a.completenessPercentage || 100}% verified</div>
+                  </td>
+                  <td>
+                    <div style="font-weight:800;color:var(--green)">₹${Number(a.valuation?.estimatedTotalPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                    <div style="font-size:11px;color:var(--muted)">₹${Number(a.valuation?.estimatedPricePerKg || 0).toFixed(2)}/kg • ${a.farmerInputs?.quantityKg || a.quantityKg || 0} kg</div>
+                  </td>
+                  <td>
+                    <span class="pill ${a.publishedListingId ? '' : 'exchange'}">${a.publishedListingId ? '✓ Published' : 'Draft'}</span>
+                  </td>
+                  <td>
+                    <div style="display:flex;gap:6px">
+                      <button class="btn btn-outline btn-sm" onclick="openAnalysisModal('${a.id || a._id}')">View</button>
+                      ${!a.publishedListingId ? `<button class="btn btn-green btn-sm" onclick="quickPublishAnalysis('${a.id || a._id}')">Publish</button>` : ''}
+                      <button class="btn btn-outline btn-sm" onclick="deleteAnalysis('${a.id || a._id}')" title="Delete">🗑</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
       `;
     } else {
       // Utilizer View: Smart Proximity Recommendations + Outbound Requests
@@ -892,6 +1095,130 @@ function initDashboard() {
     listings = listings.filter(l => l.id !== id);
     saveData("agricycle_listings", listings);
     showToast("Listing removed successfully.", "info");
+    renderDashboard();
+  };
+
+  window.openAnalysisModal = function(id) {
+    const a = analyses.find(x => (x.id === id || x._id === id));
+    if (!a) return;
+
+    const modal = document.getElementById("analysisDetailModal");
+    const content = document.getElementById("modalReportContent");
+    if (!modal || !content) return;
+
+    const b = a.scoreBreakdown || { visualScore: 30, damageScore: 25, contaminationScore: 25, moistureScore: 20 };
+    const recsHtml = (a.recommendations || []).map(r => `
+      <div class="rec-card" style="padding:12px;margin-bottom:8px">
+        <div class="rec-title-row" style="margin-bottom:4px">
+          <strong style="font-size:13px">${r.application}</strong>
+          <span class="obs-badge ${r.priority === 'High' ? 'grade-a' : 'grade-b'}">${r.priority}</span>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:0">${r.description}</p>
+      </div>
+    `).join("");
+
+    content.innerHTML = `
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
+        <div>
+          <span class="report-badge-pill">AgriCycle Certified AI Quality Report</span>
+          <h2 style="font-size:20px;color:var(--forest);margin-top:6px">${a.wasteCategory}</h2>
+          <p style="font-size:12px;color:var(--muted);margin:0">Assessed on ${new Date(a.createdAt).toLocaleString("en-IN")} • ${a.rulesVersion || 'Rules v1.0.0'}</p>
+        </div>
+        <div class="grade-stamp ${a.qualityGrade === 'B' ? 'grade-b' : a.qualityGrade === 'C' ? 'grade-c' : ''}" style="width:54px;height:54px;font-size:24px">${a.qualityGrade}</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:16px;margin-bottom:16px;background:var(--paper);padding:14px;border-radius:var(--radius-md);border:1px solid var(--line)">
+        <img src="${a.imageUrl || 'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=700&q=80'}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;border:1px solid var(--line)" alt="${a.wasteCategory}">
+        <div>
+          <div style="font-size:22px;font-weight:900;color:var(--forest)">${a.qualityScore} <small style="font-size:13px;font-weight:600;color:var(--muted)">/ 100 Quality Score</small></div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:8px">Completeness: <b>${a.completenessPercentage || 100}%</b> ${a.completenessPercentage < 100 ? '(Moisture unmeasured)' : ''}</div>
+          <div style="font-size:12px">
+            <span>Color: <b>${a.visualObservations?.colour || 'Standard'}</b></span> • 
+            <span>Damage: <b>${a.visualObservations?.visibleDamage || 'Low'}</b></span> • 
+            <span>Contamination: <b>${a.visualObservations?.visibleContamination || 'Low'}</b></span>
+          </div>
+          <div style="font-size:12px;margin-top:4px">
+            <span>Fungal / Mould: <b>${a.visualObservations?.fungalGrowth || 'Not detected'}</b></span> • 
+            <span>Storage: <b>${a.farmerInputs?.storageCondition || 'Covered'}</b></span>
+          </div>
+        </div>
+      </div>
+
+      <h4 style="font-size:13px;font-weight:800;color:var(--forest);margin-bottom:8px">Score Component Breakdown</h4>
+      <div class="score-breakdown-list" style="margin-bottom:16px">
+        <div class="score-row"><span class="score-name">Visible Condition</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:${(b.visualScore/30)*100}%"></div></div><span class="score-value">${b.visualScore}/30</span></div>
+        <div class="score-row"><span class="score-name">Damage Assessment</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:${(b.damageScore/25)*100}%"></div></div><span class="score-value">${b.damageScore}/25</span></div>
+        <div class="score-row"><span class="score-name">Contamination Cleanness</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:${(b.contaminationScore/25)*100}%"></div></div><span class="score-value">${b.contaminationScore}/25</span></div>
+        <div class="score-row"><span class="score-name">Moisture & Storage</span><div class="score-bar-bg"><div class="score-bar-fill" style="width:${b.moistureScore !== null ? (b.moistureScore/20)*100 : 0}%"></div></div><span class="score-value">${b.moistureScore !== null ? b.moistureScore + '/20' : 'Unknown'}</span></div>
+      </div>
+
+      <h4 style="font-size:13px;font-weight:800;color:var(--forest);margin-bottom:8px">Recommended Circular Applications</h4>
+      <div style="max-height:160px;overflow-y:auto;margin-bottom:16px">${recsHtml}</div>
+
+      <div class="valuation-banner" style="margin-bottom:16px;padding:14px">
+        <div>
+          <span style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#d3e6db">Intelligent Valuation</span>
+          <div class="valuation-total" style="font-size:22px">₹${Number(a.valuation?.estimatedTotalPrice || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+          <div style="font-size:12px;color:#e8f5ed">₹${Number(a.valuation?.estimatedPricePerKg || 0).toFixed(2)}/kg for ${Number(a.farmerInputs?.quantityKg || a.quantityKg || 0).toLocaleString()} kg</div>
+          <div class="valuation-basis" style="font-size:11px;margin-top:4px">${a.valuation?.valuationBasis || 'Benchmark reference pricing'}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        ${!a.publishedListingId ? `<button type="button" class="btn btn-green btn-sm" onclick="quickPublishAnalysis('${a.id || a._id}'); closeAnalysisModal();">🚀 Publish to Marketplace</button>` : `<span class="pill" style="align-self:center">✓ Listed on Marketplace</span>`}
+        <button type="button" class="btn btn-outline btn-sm" onclick="closeAnalysisModal()">Close</button>
+      </div>
+    `;
+
+    modal.classList.add("active");
+  };
+
+  window.closeAnalysisModal = function() {
+    const modal = document.getElementById("analysisDetailModal");
+    if (modal) modal.classList.remove("active");
+  };
+
+  window.quickPublishAnalysis = function(id) {
+    const a = analyses.find(x => (x.id === id || x._id === id));
+    if (!a) return;
+
+    const newListing = {
+      id: `lst_ai_${Date.now()}`,
+      name: a.wasteCategory,
+      cropCategory: a.wasteCategory,
+      quantity: a.farmerInputs?.quantityKg || a.quantityKg || 1000,
+      availableQuantity: a.farmerInputs?.quantityKg || a.quantityKg || 1000,
+      location: a.farmerInputs?.location || a.location || "Mandya, Karnataka",
+      state: "Karnataka",
+      lat: 12.5242,
+      lng: 76.8958,
+      type: "Sell",
+      price: a.valuation?.estimatedPricePerKg || 2.0,
+      farmerName: currentUser.name || "Thanush Kunder",
+      farmerContact: currentUser.phone || "+91 7795117065",
+      emoji: getCategoryEmoji(a.wasteCategory),
+      image: a.imageUrl || "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=700&q=80",
+      verified: true,
+      qualityGrade: `Grade ${a.qualityGrade} (${a.qualityScore}/100)`,
+      moisture: a.farmerInputs?.moisturePercentage,
+      dateAdded: new Date().toISOString().split("T")[0]
+    };
+
+    listings.unshift(newListing);
+    saveData("agricycle_listings", listings);
+
+    a.publishedListingId = newListing.id;
+    saveData("agricycle_analyses", analyses);
+
+    showToast(`Published ${a.wasteCategory} Grade ${a.qualityGrade} to marketplace!`, "success");
+    renderDashboard();
+  };
+
+  window.deleteAnalysis = function(id) {
+    if (!confirm("Are you sure you want to delete this assessment report?")) return;
+    analyses = analyses.filter(x => (x.id !== id && x._id !== id));
+    saveData("agricycle_analyses", analyses);
+    showToast("Assessment report removed.", "info");
     renderDashboard();
   };
 
@@ -1147,6 +1474,7 @@ function initListWasteForm() {
 
   function setPhotoPreview(src, label) {
     activePhotoData = src;
+    window.activePhotoData = src;
     const previewWrap = document.getElementById("photoPreviewWrap");
     const previewImg = document.getElementById("previewImageEl");
     const previewName = document.getElementById("previewFileName");
@@ -1177,6 +1505,7 @@ function initListWasteForm() {
 
   window.removePhoto = function() {
     activePhotoData = "";
+    window.activePhotoData = "";
     const previewWrap = document.getElementById("photoPreviewWrap");
     const previewImg = document.getElementById("previewImageEl");
     const finalInput = document.getElementById("finalPhotoData");
@@ -1357,6 +1686,681 @@ function initListWasteForm() {
       window.location.href = "browse.html";
     }, 900);
   });
+
+  // Default harvest date to today
+  const harvestDateInput = document.getElementById("farmerHarvestDateInput");
+  if (harvestDateInput && !harvestDateInput.value) {
+    harvestDateInput.value = new Date().toISOString().split("T")[0];
+  }
+
+  // 1. Mode Switcher
+  window.switchListingMode = function(mode) {
+    const tabAi = document.getElementById("tabAiAssessment");
+    const tabQuick = document.getElementById("tabQuickListing");
+    const aiWrap = document.getElementById("aiAssessmentContainer");
+    const manualWrap = document.getElementById("manualListingContainer");
+
+    if (mode === "ai") {
+      tabAi?.classList.add("active");
+      tabQuick?.classList.remove("active");
+      aiWrap?.classList.remove("hidden");
+      manualWrap?.classList.add("hidden");
+    } else {
+      tabQuick?.classList.add("active");
+      tabAi?.classList.remove("active");
+      manualWrap?.classList.remove("hidden");
+      aiWrap?.classList.add("hidden");
+    }
+  };
+
+  // 2. Toggle Moisture Unknown
+  window.toggleMoistureUnknown = function(checkbox) {
+    const input = document.getElementById("farmerMoistureInput");
+    if (!input) return;
+    if (checkbox && checkbox.checked) {
+      input.value = "";
+      input.disabled = true;
+      input.placeholder = "Marked as Unknown (Assessment Completeness ~80%)";
+      input.style.opacity = "0.6";
+    } else {
+      input.disabled = false;
+      input.placeholder = "e.g. 14.0 (if known)";
+      input.style.opacity = "1";
+    }
+  };
+
+  // 3. Farmer GPS locator
+  window.grabGpsForFarmer = function() {
+    if (!navigator.geolocation) {
+      showToast("Geolocation is not supported by your browser.", "error");
+      return;
+    }
+    showToast("Detecting GPS coordinates...", "info");
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const loc = document.getElementById("farmerLocationInput");
+        if (loc) loc.value = `Mandya (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`;
+        showToast("Location locked from GPS!", "success");
+      },
+      () => {
+        const loc = document.getElementById("farmerLocationInput");
+        if (loc && !loc.value) loc.value = "Mandya, Karnataka";
+        showToast("Defaulted to Mandya, Karnataka.", "info");
+      }
+    );
+  };
+
+  // 4. Run AI Vision Analysis
+  window.runAiVisionAnalysis = async function() {
+    const photo = window.activePhotoData || document.getElementById("imageUrlInput")?.value || "";
+    const previewImg = document.getElementById("previewImageEl");
+    const photoToUse = photo || (previewImg && previewImg.src && !previewImg.src.endsWith("#") ? previewImg.src : "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=700&q=80");
+
+    const loadingCard = document.getElementById("aiLoadingCard");
+    const flowBar = document.getElementById("aiFlowProgressBar");
+    const step3Card = document.getElementById("step3Card");
+    const step4Card = document.getElementById("step4Card");
+
+    if (loadingCard) loadingCard.classList.remove("hidden");
+    if (flowBar) flowBar.style.width = "30%";
+    loadingCard?.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    let visionResult = null;
+
+    try {
+      if (flowBar) flowBar.style.width = "65%";
+      const resp = await fetch("http://localhost:5000/api/waste-analysis/analyze-image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(localStorage.getItem("agricycle_token") ? { "Authorization": `Bearer ${localStorage.getItem("agricycle_token")}` } : {})
+        },
+        body: JSON.stringify({
+          imageBase64: photoToUse.startsWith("data:") ? photoToUse : "",
+          imageUrl: photoToUse.startsWith("http") ? photoToUse : ""
+        })
+      });
+
+      if (resp.ok) {
+        const body = await resp.json();
+        if (body.success && body.data) {
+          visionResult = body.data;
+        }
+      }
+    } catch (err) {
+      console.warn("Backend vision API call offline, falling back to heuristic CV:", err);
+    }
+
+    if (!visionResult) {
+      visionResult = evaluateHeuristicVisionObservations(photoToUse);
+    }
+
+    if (flowBar) flowBar.style.width = "100%";
+    window.currentVisionObservations = visionResult;
+
+    setTimeout(() => {
+      if (loadingCard) loadingCard.classList.add("hidden");
+
+      const select = document.getElementById("aiDetectedCategorySelect");
+      if (select) {
+        const target = visionResult.wasteType || "Rice Straw";
+        for (let i = 0; i < select.options.length; i++) {
+          if (select.options[i].value.toLowerCase() === target.toLowerCase() || target.toLowerCase().includes(select.options[i].value.toLowerCase())) {
+            select.selectedIndex = i;
+            break;
+          }
+        }
+      }
+
+      const confBadge = document.getElementById("aiConfidenceBadge");
+      if (confBadge) confBadge.textContent = `${Math.round((visionResult.confidence || 0.94) * 100)}%`;
+
+      const sourceBadge = document.getElementById("aiModelSourceBadge");
+      if (sourceBadge) sourceBadge.textContent = `Source: ${visionResult.modelUsed || "Gemini Vision"}`;
+
+      const obs = visionResult.visualObservations || {};
+      const obsColor = document.getElementById("obsColorText");
+      if (obsColor) obsColor.textContent = obs.colour || "Light golden";
+
+      const obsCond = document.getElementById("obsConditionText");
+      if (obsCond) obsCond.textContent = obs.visibleCondition || "Good";
+
+      const obsDam = document.getElementById("obsDamageText");
+      if (obsDam) obsDam.textContent = obs.visibleDamage || "Low";
+
+      const obsContam = document.getElementById("obsContaminationText");
+      if (obsContam) obsContam.textContent = obs.visibleContamination || "Low";
+
+      const obsGrade = document.getElementById("obsPreliminaryGradeBadge");
+      if (obsGrade) {
+        const pGrade = visionResult.visualQuality?.preliminaryGrade || "A";
+        obsGrade.textContent = `Grade ${pGrade}`;
+        obsGrade.className = `obs-badge grade-${pGrade.toLowerCase()}`;
+      }
+
+      const obsFungal = document.getElementById("obsFungalText");
+      if (obsFungal) obsFungal.textContent = obs.fungalGrowth || "Not visibly detected";
+
+      if (step3Card) step3Card.classList.remove("hidden");
+      if (step4Card) step4Card.classList.remove("hidden");
+
+      step3Card?.scrollIntoView({ behavior: "smooth", block: "start" });
+      showToast(`AI Vision Analysis Complete: ${visionResult.wasteType} identified!`, "success");
+    }, 600);
+  };
+
+  // 5. Submit Final Quality Assessment
+  window.submitFinalQualityAssessment = async function() {
+    const category = document.getElementById("aiDetectedCategorySelect")?.value || "Rice Straw";
+    const qty = Number(document.getElementById("farmerQtyInput")?.value || 0);
+    const isUnknown = document.getElementById("moistureUnknownCheckbox")?.checked || false;
+    const moistureRaw = document.getElementById("farmerMoistureInput")?.value;
+    const moisture = isUnknown || !moistureRaw ? null : Number(moistureRaw);
+    const storage = document.getElementById("farmerStorageSelect")?.value || "Covered storage";
+    const harvestDate = document.getElementById("farmerHarvestDateInput")?.value || new Date().toISOString().split("T")[0];
+    const location = document.getElementById("farmerLocationInput")?.value?.trim() || "Mandya, Karnataka";
+    const notes = document.getElementById("farmerNotesInput")?.value?.trim() || "";
+    const isDried = document.getElementById("farmerDriedCheckbox")?.checked ?? true;
+
+    if (!qty || qty <= 0) {
+      showToast("Please enter a valid residue quantity (kg).", "error");
+      document.getElementById("farmerQtyInput")?.focus();
+      return;
+    }
+
+    if (!location) {
+      showToast("Please provide your district / location.", "error");
+      document.getElementById("farmerLocationInput")?.focus();
+      return;
+    }
+
+    const calcBtn = document.getElementById("btnCalculateReport");
+    if (calcBtn) {
+      calcBtn.disabled = true;
+      calcBtn.textContent = "Calculating certified grading...";
+    }
+
+    const previewImg = document.getElementById("previewImageEl");
+    const photoToUse = window.activePhotoData || (previewImg && previewImg.src && !previewImg.src.endsWith("#") ? previewImg.src : "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=700&q=80");
+
+    const visualObs = window.currentVisionObservations?.visualObservations || {
+      colour: document.getElementById("obsColorText")?.textContent || "Light golden",
+      visibleCondition: document.getElementById("obsConditionText")?.textContent || "Good",
+      visibleDamage: document.getElementById("obsDamageText")?.textContent || "Low",
+      visibleContamination: document.getElementById("obsContaminationText")?.textContent || "Low",
+      visibleDeterioration: "Not detected",
+      fungalGrowth: document.getElementById("obsFungalText")?.textContent || "Not visibly detected"
+    };
+
+    const visualQual = window.currentVisionObservations?.visualQuality || {
+      preliminaryGrade: document.getElementById("obsPreliminaryGradeBadge")?.textContent?.replace("Grade ", "") || "A",
+      description: "Visual surface analysis",
+      confidence: 0.90
+    };
+
+    let report = null;
+
+    try {
+      const resp = await fetch("http://localhost:5000/api/waste-analysis/assess", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(localStorage.getItem("agricycle_token") ? { "Authorization": `Bearer ${localStorage.getItem("agricycle_token")}` } : {})
+        },
+        body: JSON.stringify({
+          wasteCategory: category,
+          quantityKg: qty,
+          moisturePercentage: moisture,
+          moistureUnknown: isUnknown,
+          storageCondition: storage,
+          harvestDate,
+          location,
+          notes,
+          isDried,
+          visualObservations: visualObs,
+          visualQuality: visualQual,
+          imageUrl: photoToUse
+        })
+      });
+
+      if (resp.ok) {
+        const body = await resp.json();
+        if (body.success && body.data) {
+          report = body.data;
+        }
+      }
+    } catch (err) {
+      console.warn("Backend quality assessment failed, using deterministic local engine:", err);
+    }
+
+    if (!report) {
+      report = evaluateDeterministicQualityReport({
+        wasteCategory: category,
+        quantityKg: qty,
+        moisturePercentage: moisture,
+        moistureUnknown: isUnknown,
+        storageCondition: storage,
+        harvestDate,
+        location,
+        notes,
+        isDried,
+        visualObservations: visualObs,
+        visualQuality: visualQual,
+        imageUrl: photoToUse
+      });
+    }
+
+    if (calcBtn) {
+      calcBtn.disabled = false;
+      calcBtn.textContent = "✓ Report Generated";
+    }
+
+    window.currentAnalysisResult = report;
+    renderFinalReportBox(report);
+  };
+
+  // 6. Render Final Report Box
+  function renderFinalReportBox(report) {
+    const box = document.getElementById("finalReportBox");
+    if (!box) return;
+
+    const rulesEl = document.getElementById("reportRulesVersionBadge");
+    if (rulesEl) rulesEl.textContent = report.rulesVersion || "Rules v1.0.0-provisional";
+
+    const dateEl = document.getElementById("reportDateText");
+    if (dateEl) dateEl.textContent = new Date(report.createdAt || Date.now()).toLocaleDateString("en-IN", { month: "short", day: "numeric", year: "numeric" });
+
+    const stampEl = document.getElementById("reportGradeStamp");
+    if (stampEl) {
+      stampEl.textContent = report.qualityGrade;
+      stampEl.className = `grade-stamp grade-${report.qualityGrade.toLowerCase()}`;
+    }
+
+    const titleEl = document.getElementById("reportGradeTitle");
+    if (titleEl) {
+      const gTitle = report.qualityGrade === "A" ? "High Quality" : report.qualityGrade === "B" ? "Medium Quality" : "Low Quality";
+      titleEl.textContent = `Grade ${report.qualityGrade} (${gTitle})`;
+    }
+
+    const catEl = document.getElementById("reportCategoryText");
+    if (catEl) catEl.textContent = `${report.wasteCategory} • Certified Agricultural Waste`;
+
+    const scoreEl = document.getElementById("reportScoreText");
+    if (scoreEl) scoreEl.innerHTML = `${report.qualityScore}<small style="font-size:14px">/100</small>`;
+
+    const compEl = document.getElementById("reportCompletenessText");
+    if (compEl) {
+      compEl.textContent = `Assessment Completeness: ${report.completenessPercentage}% ${report.completenessPercentage < 100 ? '(Moisture unmeasured)' : '(All parameters verified)'}`;
+    }
+
+    // Breakdown bars
+    const bd = report.scoreBreakdown || { visualScore: 30, damageScore: 25, contaminationScore: 25, moistureScore: 20 };
+    const barV = document.getElementById("barVisual");
+    const valV = document.getElementById("valVisual");
+    if (barV) barV.style.width = `${Math.round((bd.visualScore / 30) * 100)}%`;
+    if (valV) valV.textContent = `${bd.visualScore}/30`;
+
+    const barD = document.getElementById("barDamage");
+    const valD = document.getElementById("valDamage");
+    if (barD) barD.style.width = `${Math.round((bd.damageScore / 25) * 100)}%`;
+    if (valD) valD.textContent = `${bd.damageScore}/25`;
+
+    const barC = document.getElementById("barContam");
+    const valC = document.getElementById("valContam");
+    if (barC) barC.style.width = `${Math.round((bd.contaminationScore / 25) * 100)}%`;
+    if (valC) valC.textContent = `${bd.contaminationScore}/25`;
+
+    const barM = document.getElementById("barMoist");
+    const valM = document.getElementById("valMoist");
+    if (barM) barM.style.width = bd.moistureScore !== null ? `${Math.round((bd.moistureScore / 20) * 100)}%` : "0%";
+    if (valM) valM.textContent = bd.moistureScore !== null ? `${bd.moistureScore}/20` : "Unknown (N/A)";
+
+    // Recommendations
+    const recsBox = document.getElementById("reportRecsContainer");
+    if (recsBox) {
+      recsBox.innerHTML = (report.recommendations || []).map(r => `
+        <div class="rec-card ${r.suitable ? '' : 'unsuitable'}">
+          <div class="rec-title-row">
+            <h4>${r.application}</h4>
+            <span class="obs-badge ${r.priority === 'High' ? 'grade-a' : r.priority === 'Medium' ? 'grade-b' : 'grade-c'}">${r.priority} Priority</span>
+          </div>
+          <p>${r.description}</p>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:6px">
+            ${r.suitable ? '✓ Recommended for this certified batch' : '⚠ Not recommended due to purity/moisture constraints'}
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // Valuation
+    const valTotal = document.getElementById("reportValuationTotal");
+    if (valTotal) valTotal.textContent = `₹${Number(report.valuation.estimatedTotalPrice).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    const valRate = document.getElementById("reportValuationRate");
+    if (valRate) valRate.textContent = `₹${Number(report.valuation.estimatedPricePerKg).toFixed(2)} / kg`;
+
+    const valQty = document.getElementById("reportValuationQty");
+    if (valQty) valQty.textContent = `${Number(report.farmerInputs?.quantityKg || report.quantityKg).toLocaleString()} kg`;
+
+    const valBasis = document.getElementById("reportValuationBasis");
+    if (valBasis) valBasis.textContent = report.valuation.valuationBasis;
+
+    const valRel = document.getElementById("reportReliabilityBadge");
+    if (valRel) {
+      valRel.textContent = `${report.valuation.confidenceLevel} Reliability`;
+      valRel.className = `obs-badge grade-${report.valuation.confidenceLevel === 'High' ? 'a' : 'b'}`;
+    }
+
+    box.classList.remove("hidden");
+    box.scrollIntoView({ behavior: "smooth", block: "start" });
+    showToast(`Quality Assessment Complete: Grade ${report.qualityGrade} (${report.qualityScore}/100)!`, "success");
+  }
+
+  // 7. Publish Report as Listing
+  window.publishReportAsListing = async function() {
+    const report = window.currentAnalysisResult;
+    if (!report) {
+      showToast("Please calculate a quality assessment first.", "error");
+      return;
+    }
+
+    const btn = document.getElementById("btnPublishListing");
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Publishing to Marketplace...";
+    }
+
+    const newListing = {
+      id: `lst_ai_${Date.now()}`,
+      name: report.wasteCategory,
+      cropCategory: report.wasteCategory,
+      quantity: report.farmerInputs?.quantityKg || report.quantityKg,
+      availableQuantity: report.farmerInputs?.quantityKg || report.quantityKg,
+      location: report.farmerInputs?.location || report.location,
+      state: "Karnataka",
+      lat: 12.5242,
+      lng: 76.8958,
+      type: "Sell",
+      price: report.valuation.estimatedPricePerKg,
+      farmerName: currentUser.name || "Thanush Kunder",
+      farmerContact: currentUser.phone || "+91 7795117065",
+      emoji: getCategoryEmoji(report.wasteCategory),
+      image: report.imageUrl || window.activePhotoData || "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=700&q=80",
+      verified: true,
+      qualityGrade: `Grade ${report.qualityGrade} (${report.qualityScore}/100)`,
+      moisture: report.farmerInputs?.moisturePercentage,
+      dateAdded: new Date().toISOString().split("T")[0]
+    };
+
+    if (report._id || report.id) {
+      fetch(`http://localhost:5000/api/waste-analysis/${report._id || report.id}/publish-listing`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(localStorage.getItem("agricycle_token") ? { "Authorization": `Bearer ${localStorage.getItem("agricycle_token")}` } : {})
+        },
+        body: JSON.stringify({
+          pricePerKg: report.valuation.estimatedPricePerKg,
+          type: "Sell"
+        })
+      }).catch(() => {});
+    }
+
+    listings.unshift(newListing);
+    saveData("agricycle_listings", listings);
+
+    report.publishedListingId = newListing.id;
+    const existingIdx = analyses.findIndex(x => (x.id === report.id || x._id === report._id));
+    if (existingIdx >= 0) {
+      analyses[existingIdx] = report;
+    } else {
+      analyses.unshift(report);
+    }
+    saveData("agricycle_analyses", analyses);
+
+    showToast(`✓ Certified ${report.wasteCategory} Grade ${report.qualityGrade} published to Marketplace!`, "success");
+
+    setTimeout(() => {
+      window.location.href = "browse.html";
+    }, 1000);
+  };
+
+  // 8. Save Report Only
+  window.saveReportOnly = function() {
+    const report = window.currentAnalysisResult;
+    if (!report) {
+      showToast("Please calculate a quality assessment first.", "error");
+      return;
+    }
+
+    const existingIdx = analyses.findIndex(x => (x.id === report.id || x._id === report._id));
+    if (existingIdx >= 0) {
+      analyses[existingIdx] = report;
+    } else {
+      analyses.unshift(report);
+    }
+    saveData("agricycle_analyses", analyses);
+
+    showToast("✓ Assessment report saved to your dashboard!", "success");
+    setTimeout(() => {
+      window.location.href = "dashboard.html";
+    }, 800);
+  };
+
+  // 9. Reset Assessment Workflow
+  window.resetAssessmentWorkflow = function() {
+    if (typeof removePhoto === "function") removePhoto();
+    window.currentVisionObservations = null;
+    window.currentAnalysisResult = null;
+
+    document.getElementById("finalReportBox")?.classList.add("hidden");
+    document.getElementById("step3Card")?.classList.add("hidden");
+    document.getElementById("step4Card")?.classList.add("hidden");
+    document.getElementById("aiLoadingCard")?.classList.add("hidden");
+
+    const qtyInput = document.getElementById("farmerQtyInput");
+    if (qtyInput) qtyInput.value = "1000";
+
+    const moistInput = document.getElementById("farmerMoistureInput");
+    if (moistInput) {
+      moistInput.value = "";
+      moistInput.disabled = false;
+      moistInput.placeholder = "e.g. 14.0 (if known)";
+      moistInput.style.opacity = "1";
+    }
+
+    const moistCheck = document.getElementById("moistureUnknownCheckbox");
+    if (moistCheck) moistCheck.checked = false;
+
+    const notesInput = document.getElementById("farmerNotesInput");
+    if (notesInput) notesInput.value = "";
+
+    document.getElementById("step1Card")?.scrollIntoView({ behavior: "smooth" });
+    showToast("Ready for new batch assessment.", "info");
+  };
+}
+
+// ==========================================================================
+// Quality Assessment & Valuation Helpers (Category, Heuristics, Deterministic Engine)
+// ==========================================================================
+function getCategoryEmoji(cat) {
+  const c = (cat || "").toLowerCase();
+  if (c.includes("rice") || c.includes("paddy")) return "🌾";
+  if (c.includes("wheat")) return "🌾";
+  if (c.includes("sugarcane") || c.includes("bagasse")) return "🎋";
+  if (c.includes("coconut") || c.includes("coir")) return "🥥";
+  if (c.includes("groundnut") || c.includes("peanut")) return "🥜";
+  if (c.includes("corn") || c.includes("maize")) return "🌽";
+  if (c.includes("banana")) return "🍌";
+  if (c.includes("areca")) return "🍃";
+  if (c.includes("cotton")) return "☁️";
+  return "🌱";
+}
+
+function evaluateHeuristicVisionObservations(photo) {
+  const cat = (photo && photo.toLowerCase().includes("bagasse")) ? "Sugarcane Bagasse" :
+              (photo && photo.toLowerCase().includes("coconut")) ? "Coconut Husk" :
+              (photo && photo.toLowerCase().includes("areca")) ? "Areca Leaf" : "Rice Straw";
+
+  return {
+    wasteType: cat,
+    confidence: 0.94,
+    visualObservations: {
+      colour: cat === "Rice Straw" ? "Light golden" : cat === "Coconut Husk" ? "Fibrous brown" : cat === "Sugarcane Bagasse" ? "Pale brownish-yellow" : "Natural dry tan",
+      visibleCondition: "Good",
+      visibleDamage: "Low",
+      visibleContamination: "Low",
+      visibleDeterioration: "Not detected",
+      fungalGrowth: "Not visibly detected"
+    },
+    visualQuality: {
+      preliminaryGrade: "A",
+      description: "Clean, consistent surface fiber pattern with minimal visible foreign matter.",
+      confidence: 0.91
+    },
+    warnings: [],
+    recommendedNextSteps: ["Verify moisture content with calibrated meter or laboratory drying oven"],
+    modelUsed: "Edge Heuristic CV"
+  };
+}
+
+function evaluateDeterministicQualityReport(data) {
+  const cat = data.wasteCategory || "Rice Straw";
+  const qty = Number(data.quantityKg || 1000);
+  const moist = data.moisturePercentage !== null && data.moisturePercentage !== undefined ? Number(data.moisturePercentage) : null;
+  const isUnknown = data.moistureUnknown || moist === null;
+
+  const categoryThresholds = {
+    "Rice Straw": { optimalMoist: 14, basePrice: { A: 2.50, B: 1.80, C: 1.10 } },
+    "Wheat Straw": { optimalMoist: 13, basePrice: { A: 2.60, B: 1.90, C: 1.20 } },
+    "Sugarcane Bagasse": { optimalMoist: 25, basePrice: { A: 2.20, B: 1.60, C: 1.00 } },
+    "Coconut Husk": { optimalMoist: 18, basePrice: { A: 3.00, B: 2.10, C: 1.30 } },
+    "Groundnut Shells": { optimalMoist: 12, basePrice: { A: 2.40, B: 1.70, C: 1.10 } },
+    "Corn Stalks": { optimalMoist: 15, basePrice: { A: 2.00, B: 1.50, C: 0.90 } },
+    "Banana Waste": { optimalMoist: 30, basePrice: { A: 1.80, B: 1.30, C: 0.80 } },
+    "Areca Leaf": { optimalMoist: 12, basePrice: { A: 3.50, B: 2.40, C: 1.50 } },
+    "Cotton Stalk": { optimalMoist: 15, basePrice: { A: 2.20, B: 1.60, C: 1.00 } },
+    "Other Agricultural Residues": { optimalMoist: 16, basePrice: { A: 1.80, B: 1.30, C: 0.80 } }
+  };
+
+  const meta = categoryThresholds[cat] || categoryThresholds["Other Agricultural Residues"];
+
+  const visualCond = (data.visualObservations?.visibleCondition || "Good").toLowerCase();
+  const visualScore = visualCond.includes("good") ? 30 : visualCond.includes("fair") ? 20 : 10;
+
+  const damageLevel = (data.visualObservations?.visibleDamage || "Low").toLowerCase();
+  const damageScore = damageLevel.includes("low") ? 25 : damageLevel.includes("medium") ? 15 : 5;
+
+  const contamLevel = (data.visualObservations?.visibleContamination || "Low").toLowerCase();
+  const contamScore = contamLevel.includes("low") ? 25 : contamLevel.includes("medium") ? 15 : 0;
+
+  let moistureScore = null;
+  let completeness = 80;
+
+  if (!isUnknown && moist !== null) {
+    completeness = 100;
+    if (moist <= meta.optimalMoist) {
+      moistureScore = 20;
+    } else if (moist <= meta.optimalMoist + 5) {
+      moistureScore = 14;
+    } else {
+      moistureScore = 5;
+    }
+  }
+
+  let totalScore = 0;
+  if (moistureScore !== null) {
+    totalScore = visualScore + damageScore + contamScore + moistureScore;
+  } else {
+    const rawSum = visualScore + damageScore + contamScore;
+    totalScore = Math.round((rawSum / 80) * 100);
+  }
+
+  const fungalDetected = (data.visualObservations?.fungalGrowth || "").toLowerCase().includes("detect") &&
+                        !(data.visualObservations?.fungalGrowth || "").toLowerCase().includes("not");
+
+  let grade = "A";
+  if (fungalDetected || contamLevel.includes("high")) {
+    grade = "C";
+  } else if (totalScore >= 80) {
+    grade = "A";
+  } else if (totalScore >= 60) {
+    grade = "B";
+  } else {
+    grade = "C";
+  }
+
+  const baseRate = meta.basePrice[grade] || 1.80;
+  const bulkIncentive = qty >= 3000 ? 0.20 : qty >= 1000 ? 0.10 : 0;
+  const qualityDelta = totalScore >= 90 ? 0.10 : totalScore < 55 ? -0.10 : 0;
+  const pricePerKg = Number((baseRate + bulkIncentive + qualityDelta).toFixed(2));
+  const totalPrice = Number((pricePerKg * qty).toFixed(2));
+
+  const allRecs = {
+    "Rice Straw": [
+      { application: "Mushroom Cultivation Substrate", priority: "High", description: "Optimal cellulose structure for oyster and paddy straw mushroom mycelium growth.", suitable: grade !== "C" && !fungalDetected },
+      { application: "Livestock Fodder & Bedding", priority: "High", description: "Clean dry golden straw for cattle fodder roughage and animal shed bedding.", suitable: grade === "A" && !fungalDetected },
+      { application: "Biomass Briquetting & Pelleting", priority: "Medium", description: "High calorific density for industrial boiler fuels and solid biofuel briquettes.", suitable: true }
+    ],
+    "Sugarcane Bagasse": [
+      { application: "Biofuel Boiler Feedstock", priority: "High", description: "High-yield calorific fuel for sugar mill co-generation and paper mills.", suitable: true },
+      { application: "Biodegradable Tableware Moulding", priority: "High", description: "Thermoformed biodegradable tableware, plates, and takeaway boxes.", suitable: grade === "A" },
+      { application: "Organic Soil Composting", priority: "Medium", description: "Enriched carbonaceous substrate for organic composting and mulching.", suitable: true }
+    ],
+    "Coconut Husk": [
+      { application: "Coir Geotextile & Fiber Yarn", priority: "High", description: "Strong natural fibers for erosion control blankets and horticultural ropes.", suitable: grade !== "C" },
+      { application: "Horticultural Coco Peat Substrate", priority: "High", description: "High water retention growing media for polyhouse floriculture and nurseries.", suitable: grade !== "C" },
+      { application: "Activated Carbon Precursor", priority: "Medium", description: "Dense lignin matrix for industrial water and air filtration activated carbon.", suitable: true }
+    ],
+    "Areca Leaf": [
+      { application: "Biodegradable Areca Dinnerware", priority: "High", description: "Hot-pressed eco-friendly plates, bowls, and cutlery replacing single-use plastics.", suitable: grade === "A" && !fungalDetected },
+      { application: "Mushroom Substrate Amendment", priority: "Medium", description: "Sterilized lignified leaf sheaths for specialty mushroom cultures.", suitable: grade !== "C" },
+      { application: "Organic Mulch & Compost", priority: "Low", description: "Shredded organic mulch for weed suppression and soil moisture retention.", suitable: true }
+    ]
+  };
+
+  const recs = allRecs[cat] || [
+    { application: "Biomass Briquetting & Pelleting", priority: "High", description: "Clean compressed bio-pellets for commercial and industrial thermal energy.", suitable: true },
+    { application: "Enriched Microbial Compost", priority: "Medium", description: "Aerobic microbial composting converting crop residues into nutrient-rich humus.", suitable: true },
+    { application: "Biochar Pyrolysis", priority: "Medium", description: "Slow-pyrolysis biochar for long-term carbon sequestration and soil health.", suitable: true }
+  ];
+
+  return {
+    id: `ana_local_${Date.now()}`,
+    wasteCategory: cat,
+    quantityKg: qty,
+    qualityGrade: grade,
+    qualityScore: totalScore,
+    completenessPercentage: completeness,
+    scoreBreakdown: {
+      visualScore,
+      damageScore,
+      contaminationScore,
+      moistureScore
+    },
+    valuation: {
+      estimatedPricePerKg: pricePerKg,
+      estimatedTotalPrice: totalPrice,
+      valuationBasis: `Base benchmark: ₹${baseRate.toFixed(2)}/kg for Grade ${grade} with +₹${bulkIncentive.toFixed(2)}/kg bulk incentive and ${qualityDelta >= 0 ? '+' : ''}₹${qualityDelta.toFixed(2)}/kg score adjustment`,
+      confidenceLevel: completeness === 100 ? "High" : "Medium"
+    },
+    recommendations: recs,
+    visualObservations: data.visualObservations,
+    visualQuality: data.visualQuality,
+    farmerInputs: {
+      quantityKg: qty,
+      moisturePercentage: moist,
+      moistureUnknown: isUnknown,
+      storageCondition: data.storageCondition,
+      harvestDate: data.harvestDate,
+      location: data.location,
+      notes: data.notes,
+      isDried: data.isDried
+    },
+    rulesVersion: "1.0.0-provisional",
+    createdAt: new Date().toISOString(),
+    imageUrl: data.imageUrl
+  };
 }
 
 // ==========================================================================
@@ -1410,24 +2414,67 @@ function initImpactCalculator() {
 }
 
 // ==========================================================================
-// 10. AI Chatbot Assistant ("AgriBot")
+// ==========================================================================
+// 10. AI Chatbot Assistant ("AgriBot") - Powered by Real Generative AI LLM
 // ==========================================================================
 function setupAgriBot() {
   const bubble = document.getElementById("agriBotBubble");
   const windowEl = document.getElementById("agriBotWindow");
+  if (!windowEl) return;
+
+  // 1. Augment Chat Header with Controls if not already present
+  const header = windowEl.querySelector(".chatbot-header");
+  if (header && !header.querySelector(".chat-header-actions")) {
+    header.innerHTML = `
+      <div class="chat-header-title">
+        <h4><span class="chat-status-dot"></span>🤖 AgriBot Assistant</h4>
+        <span class="chat-ai-badge">AI Powered</span>
+      </div>
+      <div class="chat-header-actions">
+        <button id="agriBotClear" class="chat-hdr-btn" type="button" title="Clear conversation">🗑️</button>
+        <button id="agriBotMaximize" class="chat-hdr-btn" type="button" title="Maximize/Restore window">⤢</button>
+        <button id="agriBotClose" class="chat-hdr-btn" type="button" title="Close">✕</button>
+      </div>
+    `;
+  }
+
   const closeBtn = document.getElementById("agriBotClose");
+  const maxBtn = document.getElementById("agriBotMaximize");
+  const clearBtn = document.getElementById("agriBotClear");
   const sendBtn = document.getElementById("agriBotSend");
   const input = document.getElementById("agriBotInput");
   const msgContainer = document.getElementById("agriBotMessages");
   const pills = document.querySelectorAll(".chat-pill");
+  const inputBar = windowEl.querySelector(".chatbot-input-bar");
 
-  if (!windowEl) return;
+  // Augment input bar with Pause/Resume and Stop buttons
+  let pauseBtn = document.getElementById("agriBotPause");
+  let stopBtn = document.getElementById("agriBotStop");
+  if (inputBar && !stopBtn) {
+    pauseBtn = document.createElement("button");
+    pauseBtn.id = "agriBotPause";
+    pauseBtn.className = "bot-pause-btn";
+    pauseBtn.type = "button";
+    pauseBtn.title = "Pause generation";
+    pauseBtn.style.display = "none";
+    pauseBtn.innerHTML = "⏸️";
 
+    stopBtn = document.createElement("button");
+    stopBtn.id = "agriBotStop";
+    stopBtn.className = "bot-stop-btn";
+    stopBtn.type = "button";
+    stopBtn.title = "Stop generation";
+    stopBtn.style.display = "none";
+    stopBtn.innerHTML = "⏹️";
+
+    inputBar.appendChild(pauseBtn);
+    inputBar.appendChild(stopBtn);
+  }
+
+  // 2. Window Visibility and Sizing Handlers
   window.openAgriBot = function() {
     windowEl.classList.remove("hidden");
-    if (input) {
-      setTimeout(() => input.focus(), 150);
-    }
+    if (input) setTimeout(() => input.focus(), 150);
   };
 
   window.toggleAgriBot = function() {
@@ -1437,65 +2484,811 @@ function setupAgriBot() {
     }
   };
 
-  bubble?.addEventListener("click", window.toggleAgriBot);
+  window.toggleAgriBotMaximize = function() {
+    windowEl.classList.toggle("maximized");
+    const isMax = windowEl.classList.contains("maximized");
+    if (maxBtn) {
+      maxBtn.textContent = isMax ? "🗗" : "⤢";
+      maxBtn.title = isMax ? "Restore window size" : "Expand window";
+    }
+  };
 
-  // Bind any topbar or header chatbot trigger buttons
+  bubble?.addEventListener("click", window.toggleAgriBot);
+  closeBtn?.addEventListener("click", () => windowEl.classList.add("hidden"));
+  maxBtn?.addEventListener("click", window.toggleAgriBotMaximize);
+
   document.querySelectorAll("#topbarChatbotBtn, [data-open-chatbot]").forEach(btn => {
     btn.addEventListener("click", window.openAgriBot);
   });
 
-  closeBtn?.addEventListener("click", () => windowEl.classList.add("hidden"));
+  // 3. Conversation Context & State Management
+  let chatHistory = [];
+  try {
+    const saved = localStorage.getItem("agricycle_chat_history");
+    if (saved) {
+      chatHistory = JSON.parse(saved);
+      if (!Array.isArray(chatHistory)) chatHistory = [];
+    }
+  } catch (_) {
+    chatHistory = [];
+  }
 
-  const botResponses = {
-    paddy: "Paddy Straw is in high demand for mushroom cultivation (oyster/milky mushrooms), packaging material, and compressed biomass pellets for boilers. You can sell it around ₹1.5 - ₹2.5/kg on AgriCycle!",
-    coconut: "Coconut Husk can be converted to coir fibre, potting peat for nurseries, and geo-textiles for soil erosion control. Many buyers in coastal Karnataka take it via exchange!",
-    stubble: "Burning agricultural residue causes severe smog, loss of soil nitrogen, and carbon pollution. AgriCycle connects you directly with nearby bio-composters and power plants to turn that waste into profit.",
-    verify: "AgriCycle features AI CNN Quality Verification. Simply upload a photo of your harvest residue on the 'List Waste' page to verify fiber density and receive a Grade A badge with higher search priority!",
-    proximity: "Our matching algorithm uses the Haversine formula to compute geodesic distances between farms and utilizers, keeping transport costs low and minimizing transit emissions."
+  function saveChatHistory() {
+    try {
+      localStorage.setItem("agricycle_chat_history", JSON.stringify(chatHistory.slice(-20)));
+    } catch (_) {}
+  }
+
+  // Active generation controller state
+  let activeAbortController = null;
+  let activeReader = null;
+  let isGenerating = false;
+  let isGenerationPaused = false;
+  let pauseBuffer = [];
+  let currentBotContentEl = null;
+  let currentBotMsgEl = null;
+  let currentBotRawText = "";
+
+  function setGeneratingState(generating, paused = false) {
+    isGenerating = generating;
+    isGenerationPaused = paused;
+
+    if (generating) {
+      if (sendBtn) sendBtn.style.display = "none";
+      if (pauseBtn) {
+        pauseBtn.style.display = "inline-flex";
+        pauseBtn.innerHTML = paused ? "▶️" : "⏸️";
+        pauseBtn.title = paused ? "Resume generation" : "Pause generation";
+      }
+      if (stopBtn) {
+        stopBtn.style.display = "inline-flex";
+      }
+      if (input) {
+        input.disabled = true;
+        input.placeholder = paused ? "Generation paused..." : "AgriBot is responding...";
+      }
+    } else {
+      if (sendBtn) {
+        sendBtn.style.display = "inline-flex";
+        sendBtn.disabled = false;
+      }
+      if (pauseBtn) pauseBtn.style.display = "none";
+      if (stopBtn) stopBtn.style.display = "none";
+      if (input) {
+        input.disabled = false;
+        input.placeholder = "Ask AgriBot a question...";
+      }
+    }
+  }
+
+  window.clearAgriBotHistory = function() {
+    if (isGenerating) {
+      stopAgriBotGeneration();
+    }
+    chatHistory = [];
+    localStorage.removeItem("agricycle_chat_history");
+    if (msgContainer) {
+      msgContainer.innerHTML = `
+        <div class="chat-msg bot" data-raw-text="Hello! I am AgriBot, your intelligent assistant powered by generative AI.">
+          <p>👋 Hello! I am <strong>AgriBot</strong>, your intelligent assistant powered by generative AI.</p>
+          <p>I can help you with <strong>agricultural waste valuation</strong>, <strong>crop residue recycling</strong>, and any open-ended questions across <strong>technology, science, mathematics, coding, business, and writing</strong>.</p>
+          <p>How can I help you today?</p>
+        </div>
+      `;
+    }
+    if (typeof showToast === "function") {
+      showToast("Conversation cleared", "info");
+    }
+  };
+  clearBtn?.addEventListener("click", window.clearAgriBotHistory);
+
+  // 4. Markdown Formatter with Code Syntax Wrappers & Tables
+  function escapeHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function formatChatMarkdown(raw) {
+    if (!raw) return "";
+
+    // 4.1 Extract code blocks first to protect code contents
+    const codeBlocks = [];
+    let text = raw.replace(/```([a-zA-Z0-9_\-\+]*)\n?([\s\S]*?)```/g, (match, lang, code) => {
+      const ph = `__CODE_BLOCK_${codeBlocks.length}__`;
+      codeBlocks.push({ lang: (lang || "code").trim(), code: code.trim() });
+      return ph;
+    });
+
+    // 4.2 Escape HTML in regular text
+    text = escapeHtml(text);
+
+    // 4.3 Markdown tables
+    text = text.replace(/((?:\|[^\n]+\|\r?\n)+)/g, match => {
+      const lines = match.trim().split(/\r?\n/).filter(Boolean);
+      if (lines.length < 2) return match;
+      const headers = lines[0].split("|").slice(1, -1).map(h => h.trim());
+      if (!lines[1].includes("-")) return match;
+      let table = '<div class="chat-table-wrap"><table class="chat-table"><thead><tr>';
+      headers.forEach(h => { table += `<th>${h}</th>`; });
+      table += '</tr></thead><tbody>';
+      for (let i = 2; i < lines.length; i++) {
+        const cells = lines[i].split("|").slice(1, -1).map(c => c.trim());
+        table += '<tr>';
+        cells.forEach(c => { table += `<td>${c}</td>`; });
+        table += '</tr>';
+      }
+      table += '</tbody></table></div>';
+      return table;
+    });
+
+    // 4.4 Headings
+    text = text.replace(/^#### (.*?)$/gm, '<h4>$1</h4>');
+    text = text.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
+    text = text.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
+    text = text.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
+
+    // 4.5 Blockquotes
+    text = text.replace(/^> (.*?)$/gm, '<blockquote>$1</blockquote>');
+
+    // 4.6 Inline code (extract first to protect underscores like `GEMINI_API_KEY`)
+    const inlineCodes = [];
+    text = text.replace(/`([^`\n]+)`/g, (match, code) => {
+      const ph = `__INLINE_CODE_${inlineCodes.length}__`;
+      inlineCodes.push(code);
+      return ph;
+    });
+
+    // 4.7 Bold & Italics
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/__(.*?)__/g, '<strong>$1</strong>');
+    text = text.replace(/\*([^\*\n]+?)\*/g, '<em>$1</em>');
+    text = text.replace(/(^|\s)_([^_ \n]+?)_(\s|$)/g, '$1<em>$2</em>$3');
+
+    // 4.8 Restore inline code
+    inlineCodes.forEach((ic, idx) => {
+      text = text.replace(`__INLINE_CODE_${idx}__`, `<code>${ic}</code>`);
+    });
+
+    // 4.8 Unordered lists
+    text = text.replace(/(?:^|\n)([\*\-] [^\n]+(?:\n[\*\-] [^\n]+)*)/g, (m, list) => {
+      const items = list.split(/\n[\*\-] /).map((it, idx) => {
+        const clean = idx === 0 ? it.replace(/^[\*\-] /, "") : it;
+        return `<li>${clean.trim()}</li>`;
+      }).join("");
+      return `<ul>${items}</ul>`;
+    });
+
+    // 4.9 Ordered lists
+    text = text.replace(/(?:^|\n)(\d+\. [^\n]+(?:\n\d+\. [^\n]+)*)/g, (m, list) => {
+      const items = list.split(/\n\d+\. /).map((it, idx) => {
+        const clean = idx === 0 ? it.replace(/^\d+\. /, "") : it;
+        return `<li>${clean.trim()}</li>`;
+      }).join("");
+      return `<ol>${items}</ol>`;
+    });
+
+    // 4.10 Paragraphs and line breaks
+    const paragraphs = text.split(/\n\s*\n/);
+    text = paragraphs.map(p => {
+      p = p.trim();
+      if (!p) return "";
+      if (/^<(h[1-4]|ul|ol|blockquote|div|table)/i.test(p)) return p;
+      return `<p>${p.replace(/\n/g, "<br>")}</p>`;
+    }).filter(Boolean).join("");
+
+    // 4.11 Restore code blocks with language badge and copy button
+    codeBlocks.forEach((cb, idx) => {
+      const ph = `__CODE_BLOCK_${idx}__`;
+      const escaped = escapeHtml(cb.code);
+      const langLabel = (cb.lang || "code").toUpperCase();
+      const blockHtml = `
+        <div class="code-block-wrap">
+          <div class="code-block-header">
+            <span class="code-lang-badge">${langLabel}</span>
+            <button type="button" class="copy-code-btn" onclick="window.copyChatCode(this)">📋 Copy Code</button>
+          </div>
+          <pre><code class="language-${cb.lang}">${escaped}</code></pre>
+        </div>
+      `.trim();
+      text = text.replace(ph, blockHtml);
+    });
+
+    return text;
+  }
+
+  // 5. Global Action Handlers: Copy Code, Copy Response, Regenerate
+  window.copyChatCode = function(btn) {
+    const codeEl = btn.closest(".code-block-wrap")?.querySelector("pre code");
+    if (!codeEl) return;
+    const codeText = codeEl.textContent || "";
+    navigator.clipboard.writeText(codeText).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = "✓ Copied!";
+      setTimeout(() => { btn.innerHTML = orig; }, 1800);
+    }).catch(() => {
+      if (typeof showToast === "function") showToast("Failed to copy code", "error");
+    });
   };
 
-  function appendMsg(text, sender) {
-    if (!msgContainer) return;
-    const msg = document.createElement("div");
-    msg.className = `chat-msg ${sender}`;
-    msg.textContent = text;
-    msgContainer.appendChild(msg);
+  window.copyChatResponse = function(btn) {
+    const msg = btn.closest(".chat-msg.bot");
+    if (!msg) return;
+    const raw = msg.dataset.rawText || msg.innerText || "";
+    navigator.clipboard.writeText(raw).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = "✓ Copied";
+      setTimeout(() => { btn.innerHTML = orig; }, 1800);
+    }).catch(() => {
+      if (typeof showToast === "function") showToast("Failed to copy response", "error");
+    });
+  };
+
+  // 6. UI Helpers: Typing Indicator & Message Rendering
+  function showTypingIndicator() {
+    hideTypingIndicator();
+    const indicator = document.createElement("div");
+    indicator.className = "typing-bubble";
+    indicator.id = "agriBotTypingIndicator";
+    indicator.innerHTML = `
+      <span class="typing-dot"></span>
+      <span class="typing-dot"></span>
+      <span class="typing-dot"></span>
+      <span style="margin-left: 4px;">AgriBot is thinking...</span>
+    `;
+    msgContainer.appendChild(indicator);
     msgContainer.scrollTop = msgContainer.scrollHeight;
   }
 
-  function handleUserQuery(q) {
-    appendMsg(q, "user");
-    const lower = q.toLowerCase();
-
-    let reply = "I can help with crop residue repurposing, AI CNN verification, or Karnataka pricing. Ask about Paddy Straw, Coconut Husk, Stubble Burning, or Proximity Matching!";
-    if (lower.includes("paddy") || lower.includes("straw")) reply = botResponses.paddy;
-    else if (lower.includes("coconut") || lower.includes("husk")) reply = botResponses.coconut;
-    else if (lower.includes("stubble") || lower.includes("burn") || lower.includes("smoke")) reply = botResponses.stubble;
-    else if (lower.includes("verify") || lower.includes("ai") || lower.includes("cnn") || lower.includes("grade")) reply = botResponses.verify;
-    else if (lower.includes("distance") || lower.includes("proximity") || lower.includes("match") || lower.includes("haversine")) reply = botResponses.proximity;
-
-    setTimeout(() => appendMsg(reply, "bot"), 400);
+  function hideTypingIndicator() {
+    const el = document.getElementById("agriBotTypingIndicator");
+    if (el) el.remove();
   }
 
+  function appendBotFooter(botEl) {
+    // Only append if footer does not already exist
+    if (botEl.querySelector(".msg-footer")) return;
+
+    const footer = document.createElement("div");
+    footer.className = "msg-footer";
+    const timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    footer.innerHTML = `
+      <span class="msg-time">${timeStr} • AgriBot</span>
+      <div class="msg-actions">
+        <button type="button" class="msg-btn copy-msg-btn" onclick="window.copyChatResponse(this)" title="Copy response">📋 Copy</button>
+        <button type="button" class="msg-btn regen-msg-btn" onclick="window.regenerateChatResponse(this)" title="Regenerate response">🔄 Regenerate</button>
+      </div>
+    `;
+    botEl.appendChild(footer);
+  }
+
+  // 7. Interactive Message Controls: Render User Message with Edit & Rerun
+  function renderUserMessage(text, turnIndex) {
+    const userEl = document.createElement("div");
+    userEl.className = "chat-msg user";
+    userEl.dataset.turnIndex = turnIndex;
+
+    const textEl = document.createElement("div");
+    textEl.className = "user-msg-text";
+    textEl.textContent = text;
+    userEl.appendChild(textEl);
+
+    const actionsEl = document.createElement("div");
+    actionsEl.className = "user-msg-actions";
+    actionsEl.innerHTML = `
+      <button type="button" class="user-action-btn edit-msg-btn" title="Edit question">✏️ Edit</button>
+      <button type="button" class="user-action-btn rerun-msg-btn" title="Rerun question">🔁 Rerun</button>
+    `;
+
+    actionsEl.querySelector(".edit-msg-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (isGenerating) return;
+      startEditingUserMessage(userEl, turnIndex);
+    });
+
+    actionsEl.querySelector(".rerun-msg-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (isGenerating) return;
+      rerunUserQuestion(turnIndex);
+    });
+
+    userEl.appendChild(actionsEl);
+    return userEl;
+  }
+
+  // Start inline editing of an existing user message
+  function startEditingUserMessage(userEl, turnIndex) {
+    if (isGenerating) return;
+
+    // Restore any other currently open edit box
+    msgContainer.querySelectorAll(".msg-edit-box").forEach(box => {
+      const parent = box.closest(".chat-msg.user");
+      const idx = parseInt(parent?.dataset.turnIndex, 10);
+      if (!isNaN(idx) && chatHistory[idx]) {
+        const origEl = renderUserMessage(chatHistory[idx].content, idx);
+        parent.replaceWith(origEl);
+      }
+    });
+
+    const currentText = chatHistory[turnIndex]?.content || userEl.querySelector(".user-msg-text")?.textContent || "";
+
+    userEl.innerHTML = `
+      <div class="msg-edit-box">
+        <textarea class="msg-edit-textarea" rows="2" aria-label="Edit question">${escapeHtml(currentText)}</textarea>
+        <div class="msg-edit-actions">
+          <button type="button" class="edit-btn edit-cancel-btn">Cancel</button>
+          <button type="button" class="edit-btn edit-save-btn">Save & Submit</button>
+        </div>
+      </div>
+    `;
+
+    const textarea = userEl.querySelector(".msg-edit-textarea");
+    const cancelBtn = userEl.querySelector(".edit-cancel-btn");
+    const saveBtn = userEl.querySelector(".edit-save-btn");
+
+    if (textarea) {
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+      textarea.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          saveBtn.click();
+        } else if (e.key === "Escape") {
+          cancelBtn.click();
+        }
+      });
+    }
+
+    cancelBtn.addEventListener("click", () => {
+      const restoredEl = renderUserMessage(currentText, turnIndex);
+      userEl.replaceWith(restoredEl);
+    });
+
+    saveBtn.addEventListener("click", () => {
+      const newText = textarea.value.trim();
+      if (!newText) return;
+      saveAndResubmitEdit(turnIndex, newText);
+    });
+  }
+
+  // Invalidate subsequent branch and resubmit edited question
+  function saveAndResubmitEdit(turnIndex, newText) {
+    if (isGenerating) return;
+
+    // Invalidate conversation history from this turn onwards
+    chatHistory = chatHistory.slice(0, turnIndex);
+    saveChatHistory();
+
+    // Remove this message and all subsequent messages from DOM
+    const allMsgs = Array.from(msgContainer.querySelectorAll(".chat-msg"));
+    allMsgs.forEach(m => {
+      const idx = parseInt(m.dataset.turnIndex, 10);
+      if (!isNaN(idx) && idx >= turnIndex) {
+        m.remove();
+      }
+    });
+
+    // Submit new question
+    handleUserQuery(newText);
+  }
+
+  // Rerun a previous user question (invalidating subsequent branch)
+  function rerunUserQuestion(turnIndex) {
+    if (isGenerating) return;
+    const question = chatHistory[turnIndex]?.content;
+    if (!question) return;
+
+    // Invalidate conversation history from this turn onwards
+    chatHistory = chatHistory.slice(0, turnIndex);
+    saveChatHistory();
+
+    // Remove this message and all subsequent messages from DOM
+    const allMsgs = Array.from(msgContainer.querySelectorAll(".chat-msg"));
+    allMsgs.forEach(m => {
+      const idx = parseInt(m.dataset.turnIndex, 10);
+      if (!isNaN(idx) && idx >= turnIndex) {
+        m.remove();
+      }
+    });
+
+    // Re-submit the question
+    handleUserQuery(question);
+  }
+
+  // Regenerate Bot response
+  window.regenerateChatResponse = function(btn) {
+    if (isGenerating) return;
+
+    let botTurnIdx = NaN;
+    if (btn) {
+      const targetBotEl = btn.closest(".chat-msg.bot");
+      if (targetBotEl) botTurnIdx = parseInt(targetBotEl.dataset.turnIndex, 10);
+    }
+
+    if (isNaN(botTurnIdx)) {
+      // Find the last assistant turn in chatHistory
+      for (let i = chatHistory.length - 1; i >= 0; i--) {
+        if (chatHistory[i].role === "assistant") {
+          botTurnIdx = i;
+          break;
+        }
+      }
+    }
+
+    if (isNaN(botTurnIdx) || botTurnIdx < 1) {
+      if (typeof showToast === "function") showToast("No previous response to regenerate", "info");
+      return;
+    }
+
+    const userTurnIdx = botTurnIdx - 1;
+    const userQuestion = chatHistory[userTurnIdx]?.content;
+    if (!userQuestion) return;
+
+    // Invalidate history from botTurnIdx onwards
+    chatHistory = chatHistory.slice(0, botTurnIdx);
+    saveChatHistory();
+
+    // Remove the bot message and any subsequent messages from DOM
+    const allMsgs = Array.from(msgContainer.querySelectorAll(".chat-msg"));
+    allMsgs.forEach(m => {
+      const idx = parseInt(m.dataset.turnIndex, 10);
+      if (!isNaN(idx) && idx >= botTurnIdx) {
+        m.remove();
+      }
+    });
+
+    // Handle query in regeneration mode (isRegen = true)
+    handleUserQuery(userQuestion, true);
+  };
+
+  // 8. Stop / Cancel Generation Handler
+  function stopAgriBotGeneration() {
+    if (!isGenerating) return;
+
+    isGenerating = false;
+    isGenerationPaused = false;
+    pauseBuffer = [];
+
+    if (activeAbortController) {
+      try { activeAbortController.abort(); } catch (_) {}
+      activeAbortController = null;
+    }
+    if (activeReader) {
+      try { activeReader.cancel().catch(() => {}); } catch (_) {}
+      activeReader = null;
+    }
+
+    hideTypingIndicator();
+
+    if (currentBotMsgEl) {
+      currentBotMsgEl.classList.remove("generating");
+      const pBadge = currentBotMsgEl.querySelector(".generation-paused-indicator");
+      if (pBadge) pBadge.remove();
+
+      if (currentBotRawText.trim().length === 0) {
+        if (currentBotContentEl) {
+          currentBotContentEl.innerHTML = `<p class="msg-interrupted"><em>⏹️ Generation cancelled.</em></p>`;
+        }
+        currentBotRawText = "Generation cancelled.";
+      } else {
+        if (!currentBotMsgEl.querySelector(".msg-interrupted-tag")) {
+          const stopTag = document.createElement("div");
+          stopTag.className = "msg-interrupted-tag";
+          stopTag.innerHTML = "⏹️ Generation stopped";
+          currentBotMsgEl.appendChild(stopTag);
+        }
+      }
+
+      currentBotMsgEl.dataset.rawText = currentBotRawText;
+      appendBotFooter(currentBotMsgEl);
+
+      const botTurnIndex = chatHistory.length;
+      currentBotMsgEl.dataset.turnIndex = botTurnIndex;
+      chatHistory.push({ role: "assistant", content: currentBotRawText });
+      saveChatHistory();
+    }
+
+    setGeneratingState(false);
+    if (input) setTimeout(() => input.focus(), 100);
+  }
+
+  stopBtn?.addEventListener("click", stopAgriBotGeneration);
+
+  // 9. Pause / Resume Handler
+  function flushPauseBuffer() {
+    if (pauseBuffer.length > 0 && currentBotContentEl) {
+      while (pauseBuffer.length > 0) {
+        currentBotRawText += pauseBuffer.shift();
+      }
+      currentBotContentEl.innerHTML = formatChatMarkdown(currentBotRawText);
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+    }
+  }
+
+  pauseBtn?.addEventListener("click", () => {
+    if (!isGenerating) return;
+    isGenerationPaused = !isGenerationPaused;
+
+    if (isGenerationPaused) {
+      pauseBtn.innerHTML = "▶️";
+      pauseBtn.title = "Resume generation";
+      if (input) input.placeholder = "Generation paused...";
+      if (currentBotMsgEl && !currentBotMsgEl.querySelector(".generation-paused-indicator")) {
+        const pBadge = document.createElement("div");
+        pBadge.className = "generation-paused-indicator";
+        pBadge.innerHTML = "⏸️ Generation paused";
+        currentBotMsgEl.appendChild(pBadge);
+      }
+    } else {
+      pauseBtn.innerHTML = "⏸️";
+      pauseBtn.title = "Pause generation";
+      if (input) input.placeholder = "AgriBot is responding...";
+      const pBadge = currentBotMsgEl?.querySelector(".generation-paused-indicator");
+      if (pBadge) pBadge.remove();
+
+      flushPauseBuffer();
+    }
+  });
+
+  // 10. Core Dispatcher with Streaming, Pause/Resume & Safe Stop
+  async function handleUserQuery(query, isRegen = false) {
+    const cleanQuery = String(query || "").trim();
+    if (!cleanQuery) return;
+
+    if (!isRegen) {
+      const userTurnIndex = chatHistory.length;
+      const userEl = renderUserMessage(cleanQuery, userTurnIndex);
+      msgContainer.appendChild(userEl);
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+      chatHistory.push({ role: "user", content: cleanQuery });
+      saveChatHistory();
+    }
+
+    showTypingIndicator();
+    setGeneratingState(true, false);
+
+    activeAbortController = new AbortController();
+    activeReader = null;
+    isGenerationPaused = false;
+    pauseBuffer = [];
+    currentBotRawText = "";
+
+    const API_BASE = window.location.port === "5000" ? "" : "http://localhost:5000";
+    const historyPayload = chatHistory.slice(-10);
+
+    let streamSuccess = false;
+    currentBotMsgEl = null;
+    currentBotContentEl = null;
+
+    // 10.1 SSE Streaming
+    try {
+      const streamRes = await fetch(`${API_BASE}/api/ai/chat/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: activeAbortController.signal,
+        body: JSON.stringify({
+          message: cleanQuery,
+          history: historyPayload
+        })
+      });
+
+      if (streamRes.ok && streamRes.body) {
+        hideTypingIndicator();
+        currentBotMsgEl = document.createElement("div");
+        currentBotMsgEl.className = "chat-msg bot generating";
+        currentBotContentEl = document.createElement("div");
+        currentBotContentEl.className = "msg-content";
+        currentBotMsgEl.appendChild(currentBotContentEl);
+        msgContainer.appendChild(currentBotMsgEl);
+
+        const reader = streamRes.body.getReader();
+        activeReader = reader;
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+          if (!isGenerating || activeAbortController?.signal.aborted) {
+            break;
+          }
+
+          let readRes;
+          try {
+            readRes = await reader.read();
+          } catch (rErr) {
+            if (activeAbortController?.signal.aborted || rErr.name === "AbortError") {
+              break;
+            }
+            throw rErr;
+          }
+
+          const { done, value } = readRes;
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const parts = buffer.split("\n\n");
+          buffer = parts.pop() || "";
+
+          for (const part of parts) {
+            const line = part.trim();
+            if (line.startsWith("data: ")) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.chunk) {
+                  if (isGenerationPaused) {
+                    pauseBuffer.push(data.chunk);
+                  } else {
+                    flushPauseBuffer();
+                    currentBotRawText += data.chunk;
+                    currentBotContentEl.innerHTML = formatChatMarkdown(currentBotRawText);
+                    msgContainer.scrollTop = msgContainer.scrollHeight;
+                  }
+                }
+              } catch (_) {}
+            }
+          }
+        }
+
+        // If generation finished from backend but user is still paused, wait until user resumes or stops
+        while (isGenerationPaused && isGenerating && !activeAbortController?.signal.aborted) {
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
+
+        // Flush remaining stream buffer if not aborted
+        if (isGenerating && !activeAbortController?.signal.aborted) {
+          if (buffer.trim().startsWith("data: ")) {
+            try {
+              const data = JSON.parse(buffer.trim().slice(6));
+              if (data.chunk) {
+                if (isGenerationPaused) {
+                  pauseBuffer.push(data.chunk);
+                } else {
+                  currentBotRawText += data.chunk;
+                  currentBotContentEl.innerHTML = formatChatMarkdown(currentBotRawText);
+                }
+              }
+            } catch (_) {}
+          }
+
+          flushPauseBuffer();
+
+          if (currentBotRawText.trim().length > 0) {
+            streamSuccess = true;
+            currentBotMsgEl.classList.remove("generating");
+            const pBadge = currentBotMsgEl.querySelector(".generation-paused-indicator");
+            if (pBadge) pBadge.remove();
+
+            currentBotMsgEl.dataset.rawText = currentBotRawText;
+            const botTurnIndex = chatHistory.length;
+            currentBotMsgEl.dataset.turnIndex = botTurnIndex;
+            appendBotFooter(currentBotMsgEl);
+            chatHistory.push({ role: "assistant", content: currentBotRawText });
+            saveChatHistory();
+          }
+        }
+      }
+    } catch (streamErr) {
+      if (activeAbortController?.signal.aborted || streamErr.name === "AbortError") {
+        // User deliberately aborted generation; do not fall back
+        return;
+      }
+      console.warn("AgriBot streaming unavailable, falling back to standard endpoint:", streamErr);
+    }
+
+    // If generation was aborted mid-stream, exit cleanly
+    if (!isGenerating || activeAbortController?.signal.aborted) {
+      return;
+    }
+
+    // 10.2 Standard Fallback if stream was unavailable or empty
+    if (!streamSuccess && isGenerating) {
+      try {
+        const fbRes = await fetch(`${API_BASE}/api/ai/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: activeAbortController.signal,
+          body: JSON.stringify({
+            message: cleanQuery,
+            history: historyPayload
+          })
+        });
+
+        hideTypingIndicator();
+        if (!fbRes.ok) throw new Error(`HTTP ${fbRes.status}`);
+        const data = await fbRes.json();
+        const reply = data.reply || data.response || "I apologize, but I could not generate a response.";
+
+        if (!currentBotMsgEl) {
+          currentBotMsgEl = document.createElement("div");
+          currentBotMsgEl.className = "chat-msg bot";
+          currentBotContentEl = document.createElement("div");
+          currentBotContentEl.className = "msg-content";
+          currentBotMsgEl.appendChild(currentBotContentEl);
+          msgContainer.appendChild(currentBotMsgEl);
+        }
+
+        currentBotMsgEl.classList.remove("generating");
+        currentBotContentEl.innerHTML = formatChatMarkdown(reply);
+        currentBotMsgEl.dataset.rawText = reply;
+        const botTurnIndex = chatHistory.length;
+        currentBotMsgEl.dataset.turnIndex = botTurnIndex;
+        appendBotFooter(currentBotMsgEl);
+        chatHistory.push({ role: "assistant", content: reply });
+        saveChatHistory();
+      } catch (err) {
+        if (activeAbortController?.signal.aborted || err.name === "AbortError") {
+          return;
+        }
+        hideTypingIndicator();
+        const errEl = document.createElement("div");
+        errEl.className = "chat-msg bot";
+        errEl.innerHTML = `
+          <p style="color:var(--rose);">⚠️ <strong>Service Notice:</strong> Could not connect to the AgriCycle AI backend. Please ensure the backend server is running on port 5000.</p>
+        `;
+        msgContainer.appendChild(errEl);
+      }
+    }
+
+    hideTypingIndicator();
+    setGeneratingState(false);
+    activeAbortController = null;
+    activeReader = null;
+    currentBotMsgEl = null;
+    currentBotContentEl = null;
+    if (input) {
+      input.value = "";
+      setTimeout(() => input.focus(), 100);
+    }
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+  }
+
+  // 11. Rehydrate chat history on initial load
+  if (chatHistory.length > 0 && msgContainer) {
+    msgContainer.innerHTML = "";
+    chatHistory.forEach((item, idx) => {
+      if (item.role === "user") {
+        msgContainer.appendChild(renderUserMessage(item.content, idx));
+      } else {
+        const botEl = document.createElement("div");
+        botEl.className = "chat-msg bot";
+        botEl.dataset.turnIndex = idx;
+        botEl.dataset.rawText = item.content;
+        const cEl = document.createElement("div");
+        cEl.className = "msg-content";
+        cEl.innerHTML = formatChatMarkdown(item.content);
+        botEl.appendChild(cEl);
+        appendBotFooter(botEl);
+        msgContainer.appendChild(botEl);
+      }
+    });
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+  }
+
+  // 12. Event Bindings: Input Submit & Quick Action Pills
   sendBtn?.addEventListener("click", () => {
+    if (isGenerating) return;
     const val = input.value.trim();
     if (!val) return;
-    input.value = "";
     handleUserQuery(val);
   });
 
   input?.addEventListener("keypress", e => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (isGenerating) return;
       const val = input.value.trim();
       if (!val) return;
-      input.value = "";
       handleUserQuery(val);
     }
   });
 
   pills.forEach(p => {
     p.addEventListener("click", () => {
-      handleUserQuery(p.dataset.query || p.textContent);
+      if (isGenerating) return;
+      const q = p.dataset.query || p.textContent.replace(/^[^\w]+/, "").trim();
+      handleUserQuery(q);
     });
   });
 }

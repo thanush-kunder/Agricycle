@@ -10,6 +10,7 @@ import exchangeRoutes from './routes/exchangeRoutes.js';
 import matchRoutes from './routes/matchRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import wasteAnalysisRoutes from './routes/wasteAnalysisRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +25,28 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({ origin: '*', credentials: true }));
 app.use(express.json());
 
+// Transparent HTTP proxy normalization (handles proxy requests for 10.126.105.53)
+app.use((req, res, next) => {
+  if (req.url.startsWith('http://') || req.url.startsWith('https://')) {
+    try {
+      const u = new URL(req.url);
+      req.url = u.pathname + u.search;
+    } catch (e) {}
+  }
+  next();
+});
+
+// Proxy Auto-Config (PAC) endpoint for Windows/Chrome routing
+app.get('/proxy.pac', (req, res) => {
+  res.setHeader('Content-Type', 'application/x-ns-proxy-autoconfig');
+  res.send(`function FindProxyForURL(url, host) {
+  if (host === "10.126.105.53") {
+    return "PROXY 127.0.0.1:5000";
+  }
+  return "DIRECT";
+}`);
+});
+
 // Serve static uploaded files
 const uploadDir = path.join(__dirname, '../uploads');
 app.use('/uploads', express.static(uploadDir));
@@ -35,6 +58,13 @@ app.use('/api/exchanges', exchangeRoutes);
 app.use('/api/match', matchRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/waste-analysis', wasteAnalysisRoutes);
+
+// Serve AgriCycle-Multipage frontend
+const multipageDir = path.join(__dirname, '../../AgriCycle-Multipage');
+const clientDistDir = path.join(__dirname, '../../client/dist');
+app.use(express.static(multipageDir));
+app.use(express.static(clientDistDir));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -42,6 +72,17 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     service: 'AgriCycle Backend API',
     timestamp: new Date().toISOString(),
+  });
+});
+
+// SPA fallback: return index.html for non-API client routes
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+    return next();
+  }
+  const indexPath = path.join(clientDistDir, 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) next();
   });
 });
 

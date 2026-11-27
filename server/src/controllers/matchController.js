@@ -1,6 +1,8 @@
 import { Listing } from '../models/index.js';
 import { rankListings, WEIGHT_PROFILES } from '../utils/matchingAlgorithm.js';
 import { calculateHaversineDistance, isValidCoordinates } from '../utils/haversine.js';
+import { isDBConnected } from '../config/db.js';
+import { memoryStore } from '../utils/memoryStore.js';
 
 /**
  * @desc    Get smart-matched listing recommendations for a utilizer
@@ -47,27 +49,36 @@ export const getRecommendations = async (req, res) => {
       });
     }
 
-    // ── Build MongoDB query ──
-    const query = { status: 'available' };
-
-    // Optionally filter by waste type
-    if (wasteType) {
-      query.wasteType = wasteType;
-    }
-
-    // Geospatial pre-filter: only fetch listings within radius
     const radiusKm = Number(maxDistanceKm);
-    const radiusInRadians = radiusKm / 6371;
-    query.location = {
-      $geoWithin: {
-        $centerSphere: [[userLng, userLat], radiusInRadians],
-      },
-    };
+    let candidates = [];
 
-    // Fetch candidate listings from DB
-    const candidates = await Listing.find(query)
-      .populate('generator', 'name phone organization email location')
-      .lean();
+    if (!isDBConnected()) {
+      candidates = memoryStore.listings.filter(l => {
+        if (wasteType && l.wasteType !== wasteType) return false;
+        return true;
+      });
+    } else {
+      // ── Build MongoDB query ──
+      const query = { status: 'available' };
+
+      // Optionally filter by waste type
+      if (wasteType) {
+        query.wasteType = wasteType;
+      }
+
+      // Geospatial pre-filter: only fetch listings within radius
+      const radiusInRadians = radiusKm / 6371;
+      query.location = {
+        $geoWithin: {
+          $centerSphere: [[userLng, userLat], radiusInRadians],
+        },
+      };
+
+      // Fetch candidate listings from DB
+      candidates = await Listing.find(query)
+        .populate('generator', 'name phone organization email location')
+        .lean();
+    }
 
     if (candidates.length === 0) {
       return res.status(200).json({

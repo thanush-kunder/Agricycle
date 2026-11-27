@@ -16,6 +16,13 @@ import numpy as np
 from PIL import Image
 from dotenv import load_dotenv
 
+# Modular AgriCycle Engines
+from gemini_vision import analyze_with_gemini_vision, SUPPORTED_CATEGORIES, normalize_category
+from quality_engine import calculate_quality_assessment, RULES_VERSION, CATEGORY_QUALITY_CRITERIA
+from recommendation_engine import get_recommendations_for_waste
+from pricing_engine import estimate_waste_valuation, get_all_reference_prices, update_reference_price
+from llm_chat import chat_orchestrator, stream_chat_orchestrator
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("agricycle-ai")
@@ -58,10 +65,10 @@ SUPPORTED_RESIDUES = [
 # Request & Response Models
 class ChatMessage(BaseModel):
     role: str = Field(..., description="Role: user or assistant")
-    content: str = Field(..., min_length=1, max_length=1500)
+    content: str = Field(..., min_length=1, max_length=15000)
 
 class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=1, max_length=1500, description="User prompt or inquiry")
+    message: str = Field(..., min_length=1, max_length=15000, description="User prompt or inquiry")
     history: Optional[List[ChatMessage]] = Field(default=[], description="Previous conversation turns")
     user_role: Optional[str] = Field(default="generator", description="generator (farmer) or utilizer (buyer)")
     crop_context: Optional[str] = Field(default=None, description="Optional crop residue context")
@@ -69,8 +76,10 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     success: bool
     reply: str
-    suggestions: List[str]
-    disclaimer: str
+    suggestions: List[str] = []
+    disclaimer: Optional[str] = None
+    model_used: Optional[str] = None
+    provider: Optional[str] = None
 
 class VerifyPathRequest(BaseModel):
     image_path: str = Field(..., description="Local server file path or URL to crop residue image")
@@ -84,6 +93,28 @@ class VerificationResponse(BaseModel):
     confidence_score: float
     verified_by: str
     details: Dict[str, Any]
+
+
+class FarmerDetailsModel(BaseModel):
+    quantity_kg: float = Field(..., gt=0, description="Available batch quantity in kg")
+    moisture_percentage: Optional[float] = Field(default=None, ge=0, le=100, description="Measured moisture percentage, if known")
+    storage_condition: Optional[str] = Field(default="Covered storage", description="Storage: Covered storage | Indoor storage | Open storage | Other")
+    harvest_date: Optional[str] = Field(default=None, description="Harvest or collection date")
+    location: Optional[str] = Field(default=None, description="Geographic location or village/district")
+    additional_description: Optional[str] = Field(default=None, description="Any additional notes or physical measurements")
+    is_dried: Optional[bool] = Field(default=False, description="Whether the material has been sun-dried")
+
+
+class AssessQualityRequest(BaseModel):
+    waste_type: str = Field(..., description="Agricultural waste category (auto-detected or farmer-corrected)")
+    visual_observations: Dict[str, Any] = Field(..., description="Visual observations from image analysis")
+    farmer_details: FarmerDetailsModel
+
+
+class UpdatePriceRequest(BaseModel):
+    category: str = Field(..., description="Waste category")
+    grade: str = Field(..., description="Quality grade: A, B, or C")
+    price: float = Field(..., gt=0, description="New reference price in ₹/kg")
 
 
 @app.get("/health", tags=["Health"])
@@ -410,8 +441,8 @@ def generate_expert_advisory(prompt: str, user_role: str, crop_context: Optional
 @app.post("/api/ai/chat", response_model=ChatResponse, tags=["Conversational AI"])
 def chat_with_advisor(req: ChatRequest):
     """
-    Conversational AI endpoint providing expert guidance on agricultural waste utilization,
-    pricing, quality enhancement, and circular economy methods.
+    Conversational AI endpoint providing open-ended dialogue, coding, analysis,
+    and agricultural circular bio-economy expertise.
     """
     clean_message = req.message.strip()
     if not clean_message:
@@ -422,14 +453,201 @@ def chat_with_advisor(req: ChatRequest):
 
     logger.info(f"Chat request received: '{clean_message[:50]}...' [Role: {req.user_role}]")
 
-    advisory = generate_expert_advisory(clean_message, req.user_role or "generator", req.crop_context)
+    history_dicts = [{"role": h.role, "content": h.content} for h in (req.history or [])]
+    result = chat_orchestrator(
+        message=clean_message,
+        history=history_dicts,
+        user_role=req.user_role or "generator",
+        crop_context=req.crop_context,
+    )
 
     return ChatResponse(
         success=True,
-        reply=advisory["reply"],
-        suggestions=advisory["suggestions"],
-        disclaimer=advisory["disclaimer"],
+        reply=result["reply"],
+        suggestions=result.get("suggestions", []),
+        disclaimer=result.get("disclaimer"),
+        model_used=result.get("model_used"),
+        provider=result.get("provider"),
     )
+
+
+@app.post("/api/ai/chat/stream", tags=["Conversational AI"])
+async def stream_chat_with_advisor(req: ChatRequest):
+    """
+    Streaming Conversational AI endpoint yielding Server-Sent Events (SSE).
+    """
+    clean_message = req.message.strip()
+    if not clean_message:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Message prompt cannot be empty or solely whitespace.",
+        )
+
+    logger.info(f"Streaming chat request: '{clean_message[:50]}...'")
+    history_dicts = [{"role": h.role, "content": h.content} for h in (req.history or [])]
+
+    def event_stream():
+        import json
+        try:
+            for chunk in stream_chat_orchestrator(
+                message=clean_message,
+                history=history_dicts,
+                user_role=req.user_role or "generator",
+                crop_context=req.crop_context,
+            ):
+                payload = json.dumps({"chunk": chunk, "done": False})
+                yield f"data: {payload}\n\n"
+            yield f"data: {json.dumps({'chunk': '', 'done': True})}\n\n"
+        except Exception as e:
+            logger.error(f"Stream error: {e}")
+            yield f"data: {json.dumps({'error': str(e), 'done': True})}\n\n"
+
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+# ==============================================================================
+# Quality Assessment & Intelligent Valuation Endpoints
+# ==============================================================================
+
+@app.post("/api/ai/analyze-waste", tags=["Quality & Valuation"])
+async def analyze_waste_image(
+    file: Optional[UploadFile] = File(None),
+    image_path: Optional[str] = Query(None),
+):
+    """
+    Step 1 & 2: Analyzes agricultural waste image using Google Gemini Vision API
+    (with automatic fallback to local Computer Vision heuristic if offline).
+    Returns structured visual observations and preliminary grade.
+    """
+    contents = b""
+    filename = "crop_residue.jpg"
+
+    if file is not None:
+        filename = file.filename or "crop_residue.jpg"
+        contents = await file.read()
+    elif image_path:
+        path = image_path.strip()
+        resolved_path = path
+        if path.startswith("/uploads/"):
+            server_uploads = os.path.join(os.path.dirname(__file__), "..", "server", "uploads", path.replace("/uploads/", ""))
+            resolved_path = os.path.abspath(server_uploads)
+        if not os.path.exists(resolved_path):
+            raise HTTPException(status_code=404, detail=f"Image file not found: {path}")
+        with open(resolved_path, "rb") as f:
+            contents = f.read()
+        filename = os.path.basename(resolved_path)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Please provide an image file upload or image_path parameter.",
+        )
+
+    if not contents or len(contents) == 0:
+        raise HTTPException(status_code=400, detail="Uploaded image is empty.")
+
+    analysis = analyze_with_gemini_vision(
+        image_bytes=contents,
+        api_key=os.getenv("GEMINI_API_KEY"),
+        model_name=os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
+        filename=filename,
+    )
+
+    return {
+        "success": True,
+        "filename": filename,
+        **analysis,
+    }
+
+
+@app.post("/api/ai/assess-quality", tags=["Quality & Valuation"])
+def assess_waste_quality(req: AssessQualityRequest):
+    """
+    Step 3-7: Evaluates farmer-provided details alongside visual observations
+    using the deterministic Python Quality Assessment Engine, Recommendation Engine,
+    and Intelligent Price Estimation Engine.
+    """
+    waste_type = normalize_category(req.waste_type)
+    farmer_dict = req.farmer_details.model_dump()
+    visual_obs = req.visual_observations
+
+    # 1. Quality Assessment Engine
+    assessment = calculate_quality_assessment(
+        waste_type=waste_type,
+        visual_observations=visual_obs,
+        farmer_details=farmer_dict,
+    )
+
+    # 2. Recommendation Engine
+    grade_code = assessment["grade_code"]
+    visible_damage = visual_obs.get("visible_damage", "Low")
+    visible_contamination = visual_obs.get("visible_contamination", "Low")
+    recommendations = get_recommendations_for_waste(
+        waste_type=waste_type,
+        grade_code=grade_code,
+        visible_damage=visible_damage,
+        visible_contamination=visible_contamination,
+    )
+
+    # 3. Intelligent Price Estimation Engine
+    quantity_kg = farmer_dict.get("quantity_kg", 100.0)
+    location = farmer_dict.get("location")
+    valuation = estimate_waste_valuation(
+        waste_type=waste_type,
+        grade_code=grade_code,
+        quantity_kg=quantity_kg,
+        location=location,
+        quality_score=assessment["quality_score"],
+    )
+
+    return {
+        "success": True,
+        "waste_type": waste_type,
+        "quality_grade": assessment["final_grade"],
+        "grade_code": grade_code,
+        "quality_score": assessment["quality_score"],
+        "assessment_completeness": assessment["assessment_completeness"],
+        "score_breakdown": assessment["score_breakdown"],
+        "grading_rules_version": assessment["grading_rules_version"],
+        "category_criteria": assessment["category_criteria"],
+        "recommendations": recommendations,
+        "valuation": valuation,
+        "disclaimer": assessment["disclaimer"],
+    }
+
+
+@app.get("/api/ai/pricing-references", tags=["Quality & Valuation"])
+def get_pricing_references_endpoint():
+    """Returns administrator reference pricing catalog."""
+    return get_all_reference_prices()
+
+
+@app.put("/api/ai/pricing-references", tags=["Quality & Valuation"])
+def update_pricing_reference_endpoint(req: UpdatePriceRequest):
+    """Administrator endpoint to update reference price for a waste category and grade."""
+    category = normalize_category(req.category)
+    success = update_reference_price(category, req.grade.upper(), req.price)
+    if not success:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not update pricing for category '{req.category}' and grade '{req.grade}'.",
+        )
+    return {
+        "success": True,
+        "message": f"Updated {category} Grade {req.grade.upper()} reference price to ₹{req.price:.2f}/kg",
+        "pricing": get_all_reference_prices(),
+    }
+
+
+@app.get("/api/ai/grading-rules", tags=["Quality & Valuation"])
+def get_grading_rules_endpoint():
+    """Returns category-specific quality grading criteria and rules version."""
+    return {
+        "success": True,
+        "rules_version": RULES_VERSION,
+        "supported_categories": SUPPORTED_CATEGORIES,
+        "criteria": CATEGORY_QUALITY_CRITERIA,
+    }
 
 
 if __name__ == "__main__":

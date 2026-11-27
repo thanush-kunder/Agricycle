@@ -149,6 +149,120 @@ class TestAIService(unittest.TestCase):
             if os.path.exists(temp_path):
                 os.remove(temp_path)
 
+    # --------------------------------------------------------------------------
+    # Quality Assessment & Valuation System Tests
+    # --------------------------------------------------------------------------
+
+    def test_quality_engine_deterministic_grade_a(self):
+        """Test that optimal visual condition and low moisture yields Grade A."""
+        from quality_engine import calculate_quality_assessment
+        visual = {
+            "visible_condition": "Good",
+            "visible_damage": "Low",
+            "visible_contamination": "Low",
+            "fungal_growth": "Not visibly detected",
+        }
+        farmer = {
+            "quantity_kg": 1000,
+            "moisture_percentage": 12.0,
+            "storage_condition": "Covered storage",
+            "harvest_date": "2026-11-10",
+        }
+        assessment = calculate_quality_assessment("Rice Straw", visual, farmer)
+        self.assertEqual(assessment["grade_code"], "A")
+        self.assertGreaterEqual(assessment["quality_score"], 80)
+        self.assertEqual(assessment["assessment_completeness"], 100)
+
+    def test_quality_engine_missing_moisture_completeness(self):
+        """Test that unknown moisture does not break scoring and sets completeness to 80%."""
+        from quality_engine import calculate_quality_assessment
+        visual = {
+            "visible_condition": "Good",
+            "visible_damage": "Low",
+            "visible_contamination": "Low",
+            "fungal_growth": "Not visibly detected",
+        }
+        farmer = {
+            "quantity_kg": 500,
+            "moisture_percentage": None,
+            "storage_condition": "Covered storage",
+            "harvest_date": "2026-11-10",
+        }
+        assessment = calculate_quality_assessment("Rice Straw", visual, farmer)
+        self.assertEqual(assessment["assessment_completeness"], 80)
+        self.assertFalse(assessment["score_breakdown"]["moisture_assessment"]["measured_by_farmer"])
+
+    def test_quality_engine_critical_moisture_yields_grade_c(self):
+        """Test that critical moisture triggers Grade C to protect buyers."""
+        from quality_engine import calculate_quality_assessment
+        visual = {
+            "visible_condition": "Fair",
+            "visible_damage": "Medium",
+            "visible_contamination": "Low",
+            "fungal_growth": "Not visibly detected",
+        }
+        farmer = {
+            "quantity_kg": 1500,
+            "moisture_percentage": 28.0,  # Critical > 22% for Rice Straw
+            "storage_condition": "Open storage",
+        }
+        assessment = calculate_quality_assessment("Rice Straw", visual, farmer)
+        self.assertEqual(assessment["grade_code"], "C")
+
+    def test_recommendation_engine_safety_filter(self):
+        """Test that contaminated or mouldy waste is never recommended for mushroom or animal feed."""
+        from recommendation_engine import get_recommendations_for_waste
+        recs = get_recommendations_for_waste(
+            waste_type="Rice Straw",
+            grade_code="A",
+            visible_damage="Low",
+            visible_contamination="High mould spotting",
+        )
+        for r in recs:
+            app_lower = r["application"].lower()
+            self.assertNotIn("mushroom", app_lower)
+            self.assertNotIn("fodder", app_lower)
+
+    def test_pricing_engine_valuation_and_bulk_bonus(self):
+        """Test price estimation and bulk quantity incentive."""
+        from pricing_engine import estimate_waste_valuation
+        valuation = estimate_waste_valuation(
+            waste_type="Rice Straw",
+            grade_code="A",
+            quantity_kg=2500,  # Qualifies for FTL bulk bonus
+            quality_score=92,
+        )
+        self.assertGreater(valuation["estimated_price_per_kg"], 2.50)
+        self.assertEqual(
+            valuation["estimated_total_value"],
+            round(valuation["estimated_price_per_kg"] * 2500, 2),
+        )
+
+    def test_admin_reference_pricing_update(self):
+        """Test that administrators can update reference pricing."""
+        from pricing_engine import update_reference_price, CURRENT_REFERENCE_PRICES
+        old_price = CURRENT_REFERENCE_PRICES["Rice Straw"]["A"]
+        success = update_reference_price("Rice Straw", "A", 3.25)
+        self.assertTrue(success)
+        self.assertEqual(CURRENT_REFERENCE_PRICES["Rice Straw"]["A"], 3.25)
+        # Restore old price
+        update_reference_price("Rice Straw", "A", old_price)
+
+    def test_gemini_vision_structured_output_heuristic_fallback(self):
+        """Test that the vision pipeline returns full structured schema even without API key."""
+        from gemini_vision import analyze_with_gemini_vision
+        img = Image.new("RGB", (80, 80), color=(220, 190, 60))
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG")
+        raw_bytes = buf.getvalue()
+
+        res = analyze_with_gemini_vision(raw_bytes, api_key=None, filename="test_straw.jpg")
+        self.assertIn("waste_type", res)
+        self.assertIn("visual_observations", res)
+        self.assertIn("visual_quality", res)
+        self.assertIn("recommended_next_steps", res)
+        self.assertIn(res["visual_quality"]["preliminary_grade"], ("A", "B", "C"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,5 +1,7 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { isDBConnected } from '../config/db.js';
+import { memoryStore } from '../utils/memoryStore.js';
 
 /**
  * Middleware to protect routes and verify JWT token
@@ -19,7 +21,17 @@ export const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'agricycle_default_secret_dev');
 
       // Attach user object to request (excluding password)
-      req.user = await User.findById(decoded.id).select('-password');
+      if (isDBConnected()) {
+        try {
+          req.user = await User.findById(decoded.id).select('-password');
+        } catch (dbErr) {
+          console.warn('DB user lookup failed, checking memory store:', dbErr.message);
+        }
+      }
+
+      if (!req.user) {
+        req.user = memoryStore.users.find(u => String(u._id) === String(decoded.id));
+      }
 
       if (!req.user) {
         return res.status(401).json({

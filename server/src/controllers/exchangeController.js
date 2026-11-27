@@ -1,4 +1,6 @@
 import { Exchange, Listing } from '../models/index.js';
+import { isDBConnected } from '../config/db.js';
+import { memoryStore } from '../utils/memoryStore.js';
 
 /**
  * @desc    Create a new exchange / waste pickup request
@@ -13,6 +15,31 @@ export const createExchangeRequest = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Please provide listingId, quantityKg, and proposedPickupDate',
+      });
+    }
+
+    if (!isDBConnected()) {
+      const listing = memoryStore.listings.find(l => String(l._id) === String(listingId)) || memoryStore.listings[0];
+      const requestedQty = Number(quantityKg);
+      const exchange = {
+        _id: 'exch_' + Date.now(),
+        listing: listing ? listing._id : listingId,
+        generator: listing ? listing.generator : req.user._id,
+        utilizer: req.user._id,
+        quantityKg: requestedQty,
+        unitPrice: listing ? listing.pricePerKg : 0,
+        totalAmount: requestedQty * (listing ? listing.pricePerKg : 0),
+        proposedPickupDate: new Date(proposedPickupDate),
+        deliveryMethod: deliveryMethod || 'self_pickup',
+        notes,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      };
+      memoryStore.exchanges.unshift(exchange);
+      return res.status(201).json({
+        success: true,
+        message: 'Exchange request submitted to the waste generator',
+        data: exchange,
       });
     }
 
@@ -81,6 +108,14 @@ export const createExchangeRequest = async (req, res) => {
  */
 export const getMyExchanges = async (req, res) => {
   try {
+    if (!isDBConnected()) {
+      return res.status(200).json({
+        success: true,
+        count: memoryStore.exchanges.length,
+        data: memoryStore.exchanges,
+      });
+    }
+
     const { role } = req.query; // optional filter: 'generator' or 'utilizer'
     let query = {};
 
