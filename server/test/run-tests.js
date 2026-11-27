@@ -287,13 +287,42 @@ await itAsync('should return 404 JSON for unknown routes', async () => {
 });
 
 // ── 5. AI Service Specification Verification ──
-console.log('\n🤖 [5/5] Testing AI Microservice Specification:');
+console.log('\n🤖 [5/6] Testing AI Microservice Specification:');
 
-it('should verify that AI service main.py and test_ai_service.py exist', () => {
+it('should verify that AI service main.py, gemini_vision.py, and quality engines exist', () => {
   const mainPy = path.join(__dirname, '../../ai-service/main.py');
-  const testPy = path.join(__dirname, '../../ai-service/test_ai_service.py');
+  const geminiPy = path.join(__dirname, '../../ai-service/gemini_vision.py');
+  const qualityPy = path.join(__dirname, '../../ai-service/quality_engine.py');
+  const pricingPy = path.join(__dirname, '../../ai-service/pricing_engine.py');
+  const recsPy = path.join(__dirname, '../../ai-service/recommendation_engine.py');
   assert.ok(fs.existsSync(mainPy), 'ai-service/main.py must exist');
-  assert.ok(fs.existsSync(testPy), 'ai-service/test_ai_service.py must exist');
+  assert.ok(fs.existsSync(geminiPy), 'ai-service/gemini_vision.py must exist');
+  assert.ok(fs.existsSync(qualityPy), 'ai-service/quality_engine.py must exist');
+  assert.ok(fs.existsSync(pricingPy), 'ai-service/pricing_engine.py must exist');
+  assert.ok(fs.existsSync(recsPy), 'ai-service/recommendation_engine.py must exist');
+});
+
+// ── 6. Waste Quality Assessment & Pricing API ──
+console.log('\n🌾 [6/6] Testing Waste Quality Assessment & Pricing API Endpoints:');
+
+await itAsync('should return reference pricing catalog from /api/waste-analysis/pricing/catalog', async () => {
+  const res = await dispatch(app, {
+    url: '/api/waste-analysis/pricing/catalog',
+    method: 'GET',
+  });
+  assert.equal(res.status, 200);
+  assert.equal(res.data.success, true);
+  assert.ok(res.data.catalog, 'catalog must be returned');
+});
+
+await itAsync('should reject analyze-image when no file or imagePath is provided', async () => {
+  const res = await dispatch(app, {
+    url: '/api/waste-analysis/analyze-image',
+    method: 'POST',
+    body: {},
+  });
+  assert.equal(res.status, 400);
+  assert.equal(res.data.success, false);
 });
 
 // ── Summary ──

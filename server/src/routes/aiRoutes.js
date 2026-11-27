@@ -1,5 +1,5 @@
 import express from 'express';
-import { chatWithAI, verifyCropImage, checkAIHealth } from '../controllers/aiController.js';
+import { chatWithAI, streamChatWithAI, verifyCropImage, checkAIHealth } from '../controllers/aiController.js';
 import { upload, handleUploadError } from '../middlewares/uploadMiddleware.js';
 import { protect } from '../middlewares/authMiddleware.js';
 
@@ -14,10 +14,17 @@ router.get('/health', checkAIHealth);
 
 /**
  * @route   POST /api/ai/chat
- * @desc    Agricultural circular bio-economy advisory chatbot
+ * @desc    General-purpose & circular bio-economy conversational AI assistant
  * @access  Public
  */
 router.post('/chat', chatWithAI);
+
+/**
+ * @route   POST /api/ai/chat/stream
+ * @desc    Streaming conversational AI assistant via Server-Sent Events (SSE)
+ * @access  Public
+ */
+router.post('/chat/stream', streamChatWithAI);
 
 /**
  * @route   POST /api/ai/verify

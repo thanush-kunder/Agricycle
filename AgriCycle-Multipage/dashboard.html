@@ -127,6 +127,16 @@
     <span>Responsive Analytics Engine</span>
   </footer>
 
+  <!-- AI Analysis Detail Modal -->
+  <div class="modal-overlay" id="analysisDetailModal" role="dialog" aria-modal="true" aria-labelledby="modalReportTitle">
+    <div class="modal-card" style="max-width:680px">
+      <button class="modal-close" onclick="closeAnalysisModal()" aria-label="Close modal">✕</button>
+      <div id="modalReportContent">
+        <!-- Populated dynamically by script.js -->
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div class="toast" id="toast" role="status"></div>
 
