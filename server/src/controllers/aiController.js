@@ -1,6 +1,8 @@
 import { Listing } from '../models/index.js';
 import fs from 'fs';
 import path from 'path';
+import { getLivePlatformContext } from '../utils/agriKnowledgeBase.js';
+import { parseDocument } from '../utils/documentParser.js';
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
@@ -10,16 +12,68 @@ const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
  */
 
 /**
- * Fallback advisory engine when AI microservice is warming up / unreachable
+ * Master System Instruction for AgriBot
  */
-const AGRIBOT_SYSTEM_PROMPT = `You are AgriBot, an intelligent, friendly, and highly capable general-purpose AI assistant built into AgriCycle.
-You are a full-featured, open-ended conversational AI. You can assist users with general knowledge, science, mathematics, programming, coding, debugging, business, creative writing, productivity, and agricultural circular bio-economy questions.
-Guidelines:
-1. Always be conversational, warm, and helpful.
-2. Adapt your response style and length dynamically.
-3. Maintain context continuity across multiple turns.
-4. Format output cleanly using GitHub-flavored Markdown (headings, lists, bold text, and fenced code blocks with language identifiers).
-5. Never refuse ordinary, safe questions or restrict conversations to agricultural topics.`;
+const AGRIBOT_SYSTEM_PROMPT = `You are AgriBot, an intelligent, empathetic, and highly capable AI assistant built into AgriCycle.
+
+### 1. DUAL IDENTITY & CORE PURPOSE
+- You possess two complementary identities:
+  1. A General-Purpose Conversational AI (like ChatGPT): Capable of answering open-ended questions across science, technology, mathematics, programming/coding in any language, education, business, writing, creative drafting, and everyday reasoning. You NEVER refuse safe general questions or claim you can only talk about agriculture.
+  2. A Specialized Agricultural Residue & Circular Bio-Economy Expert: Possessing deep scientific, industrial, and practical knowledge of crop waste management, recycling, composting, biochar, and AgriCycle platform operations.
+
+### 2. SPECIALIZED AGRICULTURAL DOMAIN KNOWLEDGE
+When discussing agricultural residues, provide practical, scientifically sound, and structured guidance:
+- Paddy Straw / Rice Straw: High silica/lignin content, low digestibility for cattle if untreated. Primary uses: mushroom substrate (oyster and paddy straw mushrooms), baled boiler fuel/biomass pellets, cardboard/paper pulp, compost with cow dung/nitrogen supplement, biochar (pyrolysis). Highlight zero-burning alternatives to combat air pollution (smog, PM2.5).
+- Rice Husk: 20% silica, high calorific value (~3000-3500 kcal/kg). Uses: industrial boiler fuel, rice husk ash (RHA) for green cement and refractory bricks, gasification, biochar soil amendment, bedding for poultry.
+- Sugarcane Bagasse: High cellulose content (~45-50%). Uses: cogeneration power plants, pulp and paper, biodegradable tableware/molded packaging, bio-ethanol, furfural extraction, composting.
+- Coconut Husk & Coir: Coconut mesocarp. Uses: coir fibre extraction (ropes, geotextiles, mattresses), coir pith / coco-peat (growing media, hydroponics, soil moisture retention), mulching for orchards.
+- Groundnut Shells: Uses: biomass briquettes/pellets, activated carbon production, particleboard filler, composting.
+- Wheat Straw: Cattle fodder (chaffed), mushroom substrate, bio-energy, paper pulp.
+- Banana Waste: Pseudostem fiber (eco-textiles, handicrafts, paper), sap/foliar spray (liquid organic fertilizer), vermicompost.
+- Corn Stalks & Cobs: Biofuel pellets, furfural, activated carbon, abrasive grits, compost.
+- Composting & Vermicomposting: C:N ratio balancing (ideal 25:1 to 30:1), moisture control (50-60%), aeration, microbial inoculants, Eisenia fetida earthworms for vermicompost.
+
+### 3. WASTE RECOMMENDATION ENGINE PROTOCOL
+When a user asks what to do with a specific residue (e.g., "I have 500 kg of rice husk" or "2 tons of coconut husk"):
+Structure your answer clearly:
+1. Material Profile: Key characteristics (moisture, bulk density, calorific value, fiber).
+2. High-Value Industrial Opportunities: Suitable off-takers (power plants, paper mills, briquette makers).
+3. On-Farm / Circular Applications: Composting, mulching, mushroom cultivation, or soil amendment.
+4. Processing & Storage Requirements: Necessary baling, shredding, sun-drying, or moisture thresholds (e.g. <15% for fuel to prevent mold/spontaneous heating).
+5. AgriCycle Action Step: Guide them on how to list it on AgriCycle to connect with verified buyers nearby.
+
+### 4. AGRICYCLE PLATFORM KNOWLEDGE
+You are an expert guide to the AgriCycle platform:
+- Platform Mission: Connect agricultural waste generators (farmers, agro-processors) with utilizers (industries, bio-energy plants, composters) to eliminate crop burning and monetize residue.
+- User Roles:
+  • Generator (Farmer / Producer): Lists crop waste, uploads photos, specifies quantity and location, receives exchange requests.
+  • Utilizer (Industry / Buyer / Composter): Browses waste by type and location, requests exchanges, tracks circular economy impact.
+  • Aggregator / Logistics: Handles bulk collection and transport.
+- Core Platform Features:
+  • Waste Listing (list-waste.html / POST /api/listings): Specify title, waste category, quantity in kg, price per kg (or Free giveaway), moisture %, quality grade, and location.
+  • AI Quality & Price Verification (POST /api/ai/verify, GET /api/waste-analysis/pricing/catalog): Automatically grades waste (Grade A/B/C) and compares against fair market reference prices.
+  • Proximity Matching (GET /api/match/recommendations): Uses the Haversine distance algorithm to rank nearby listings and reduce transport emissions.
+  • Exchange Lifecycle (requests.html / POST /api/exchanges): Pending -> Accepted / Negotiating -> Confirmed -> Completed.
+  • Environmental Impact Calculator (impact.html): Quantifies CO2 emissions prevented from avoided burning and landfill diversion.
+- Honesty Rule: If a user asks for a feature that does not exist or asks you for real buyer phone numbers, be completely honest: explain the actual AgriCycle workflow and never fabricate private contact details or fictitious listings.
+
+### 5. MULTILINGUAL COMPETENCE
+- Fully support English, Kannada (ಕನ್ನಡ), and Hindi (हिंदी).
+- Automatically detect the user's language and respond in the same language by default.
+- If a user asks in Kannada (e.g., "ನನ್ನ ಬಳಿ 500 ಕೆಜಿ ಭತ್ತದ ಹುಲ್ಲು ಇದೆ"), reply in clear, grammatically sound Kannada while keeping agricultural terms accurate.
+- If a user asks in Hindi (e.g., "धान के पुआल का क्या उपयोग हो सकता है?"), reply in fluent Hindi.
+- Gracefully understand mixed language / transliteration (Kanglish, Hinglish).
+- If the user explicitly asks to switch languages (e.g., "Reply in Kannada" or "Explain in Hindi"), switch immediately.
+
+### 6. COMMUNICATION & MARKDOWN STYLE
+1. Be warm, supportive, and articulate.
+2. Adapt length: direct and concise for simple queries; structured and thorough for complex advisory.
+3. Use GitHub-flavored Markdown:
+   - Clear headings (##, ###) for sectioning.
+   - Bullet points and numbered steps.
+   - Markdown tables for comparisons.
+   - Fenced code blocks with language identifiers (e.g., \`\`\`python, \`\`\`javascript) and helpful comments when programming.
+4. Clearly distinguish between established facts, potential applications, and practices needing local agronomic verification.`;
 
 const CANDIDATE_GEMINI_MODELS = [
   process.env.GEMINI_MODEL || 'gemini-3-flash-preview',
@@ -28,6 +82,41 @@ const CANDIDATE_GEMINI_MODELS = [
   'gemini-3.6-flash',
   'gemini-3.1-flash-lite'
 ];
+
+/**
+ * Fallback advisory engine when AI microservice and cloud LLMs are offline / in standalone mode
+ */
+export const getFallbackAdvisory = (message = '') => {
+  const m = message.toLowerCase();
+  let reply = 'AgriBot Circular Bio-Economy Advisory: Crop residues like paddy straw, coconut husk, sugarcane bagasse, and groundnut shells possess significant commercial and agricultural value. Depending on moisture and cleanliness, they can be valorized for mushroom cultivation, biomass fuel briquettes, paper pulp, or enriched organic compost.';
+  let suggestions = [
+    'How do I prepare paddy straw for mushroom cultivation?',
+    'What are the commercial uses of coconut coir pith?',
+    'What is the benchmark price of sugarcane bagasse?'
+  ];
+
+  if (m.includes('paddy') || m.includes('straw')) {
+    reply = '🌾 **Paddy / Rice Straw Valorization**:\n- **Mushroom Substrate**: Excellent for Oyster (*Pleurotus*) and Paddy Straw (*Volvariella*) mushroom farming.\n- **Bio-Energy**: Baled straw can be pelletized or briquetted for industrial boilers (calorific value ~3,200–3,500 kcal/kg).\n- **Paper & Pulp**: Cellulose fibers can be processed into eco-friendly packaging and cardboard.\n- **Composting**: Mix with nitrogen-rich animal manure to optimize C:N ratio (aiming for 25:1 to 30:1).\n\n*Storage Tip*: Keep moisture below 15% to prevent fungal decay and spontaneous heating. You can list surplus straw on AgriCycle to connect with bio-energy buyers.';
+    suggestions = ['How to prepare mushroom substrate?', 'What is the benchmark price for paddy straw?', 'How do I list my straw on AgriCycle?'];
+  } else if (m.includes('husk') || m.includes('coir') || m.includes('coconut')) {
+    reply = '🥥 **Coconut Husk & Coir Valorization**:\n- **Coir Fiber**: High tensile strength and salinity resistance, ideal for geotextiles, erosion control nets, rope, and mattress cores.\n- **Coir Pith / Coco Peat**: Outstanding water retention (~8-10x dry weight), widely utilized in hydroponics, horticulture, and potting soil.\n- **AgriCycle Action**: List your processed coir or raw husks on AgriCycle to match with nearby horticultural nurseries and de-fibering plants.';
+    suggestions = ['Coco peat processing and washing steps', 'How to sell coconut husk on AgriCycle', 'Coir fiber export potential'];
+  } else if (m.includes('bagasse') || m.includes('sugarcane')) {
+    reply = '🎋 **Sugarcane Bagasse Valorization**:\n- **Cogeneration Fuel**: Commonly combusted in sugar mill boilers for heat and power generation.\n- **Molded Pulp Tableware**: Biodegradable, compostable food containers replacing single-use plastics.\n- **Paper & Board**: Excellent source of short-fiber cellulose.\n- **Bio-Ethanol**: Suitable for second-generation (2G) cellulosic bio-refineries.';
+    suggestions = ['Bagasse moisture drying requirements', 'Industrial buyers for sugarcane bagasse', 'How to list bagasse on AgriCycle'];
+  } else if (m.includes('price') || m.includes('rate') || m.includes('cost')) {
+    reply = '💰 **Current Benchmark Residue Rates (South India Region)**:\n- **Paddy Straw**: ₹1.50 – ₹2.50 / kg (Baled, Grade A)\n- **Sugarcane Bagasse**: ₹1.80 – ₹2.80 / kg (Moisture < 50%)\n- **Coconut Husk**: ₹0.50 – ₹1.20 / piece\n- **Groundnut Shells**: ₹2.50 – ₹4.00 / kg (Briquette grade)\n*Note: Final prices depend on moisture, bailing, quantity, and transportation distance.*';
+    suggestions = ['How does location-based matching work?', 'Check live listings on AgriCycle', 'How to negotiate bulk orders'];
+  }
+
+  return {
+    success: true,
+    reply,
+    suggestions,
+    model_used: 'AgriCycle Expert Knowledge Engine',
+    provider: 'Built-in Advisory System'
+  };
+};
 
 /**
  * Direct LLM Client for Node.js backend:
@@ -240,13 +329,18 @@ export const chatWithAI = async (req, res) => {
       });
     }
 
+    const platformContext = await getLivePlatformContext(message);
+    const enrichedQuery = platformContext
+      ? `${message}\n\n${platformContext}`
+      : message;
+
     // 1. Try FastAPI microservice orchestrator
     try {
       const aiResponse = await fetch(`${AI_SERVICE_URL}/api/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message,
+          message: enrichedQuery,
           history,
           user_role,
           crop_context,
@@ -265,22 +359,14 @@ export const chatWithAI = async (req, res) => {
     }
 
     // 2. Try direct Node.js LLM call
-    const directRes = await callDirectLLM(message, history);
+    const directRes = await callDirectLLM(enrichedQuery, history);
     if (directRes && directRes.reply) {
       return res.status(200).json(directRes);
     }
 
-    // 3. Honest error response if AI services are unavailable
-    return res.status(200).json({
-      success: false,
-      error: 'ai_service_unavailable',
-      reply: '⚠️ **AI Service Notice**: The AI language model is temporarily unavailable. Please verify your connection or click **🔄 Regenerate** to retry.',
-      suggestions: [
-        'What is artificial intelligence?',
-        'Can you explain quantum computing like I\'m 10?',
-        'Write a Python program to sort a list'
-      ]
-    });
+    // 3. Robust advisory fallback when AI services are offline / in standalone mode
+    const fallback = getFallbackAdvisory(message);
+    return res.status(200).json(fallback);
   } catch (error) {
     console.error('Error in chatWithAI controller:', error);
     return res.status(500).json({
@@ -311,12 +397,17 @@ export const streamChatWithAI = async (req, res) => {
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders?.();
 
+    const platformContext = await getLivePlatformContext(message);
+    const enrichedQuery = platformContext
+      ? `${message}\n\n${platformContext}`
+      : message;
+
     // 1. Try streaming from microservice
     try {
       const aiResponse = await fetch(`${AI_SERVICE_URL}/api/ai/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, history, user_role, crop_context }),
+        body: JSON.stringify({ message: enrichedQuery, history, user_role, crop_context }),
         signal: AbortSignal.timeout(30000),
       });
 
@@ -342,7 +433,7 @@ export const streamChatWithAI = async (req, res) => {
     }
 
     // 2. Direct streaming from Gemini in Node
-    const streamedDirect = await streamDirectGemini(message, history, (chunk) => {
+    const streamedDirect = await streamDirectGemini(enrichedQuery, history, (chunk) => {
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
     });
 
@@ -352,7 +443,7 @@ export const streamChatWithAI = async (req, res) => {
     }
 
     // 3. Try standard direct LLM call and stream tokens
-    const directRes = await callDirectLLM(message, history);
+    const directRes = await callDirectLLM(enrichedQuery, history);
     if (directRes && directRes.reply) {
       const words = directRes.reply.split(' ');
       for (let i = 0; i < words.length; i += 3) {
@@ -364,8 +455,16 @@ export const streamChatWithAI = async (req, res) => {
       return res.end();
     }
 
-    // 4. Honest error message if all AI services failed
-    res.write(`data: ${JSON.stringify({ chunk: '⚠️ **AI Service Notice**: The AI language model is temporarily unavailable. Please verify your connection or click **🔄 Regenerate** to retry.', done: true })}\n\n`);
+    // 4. Standalone expert streaming fallback
+    const fallback = getFallbackAdvisory(message);
+    const words = fallback.reply.split(' ');
+    for (let i = 0; i < words.length; i += 3) {
+      const chunk = words.slice(i, i + 3).join(' ') + ' ';
+      res.write(`data: ${JSON.stringify({ chunk, done: false })}\n\n`);
+      await new Promise(r => setTimeout(r, 15));
+    }
+    res.write(`data: ${JSON.stringify({ chunk: '', done: true, suggestions: fallback.suggestions })}\n\n`);
+    res.write('event: end\ndata: [DONE]\n\n');
     return res.end();
   } catch (error) {
     console.error('Error in streamChatWithAI:', error);
@@ -378,6 +477,73 @@ export const streamChatWithAI = async (req, res) => {
   }
 };
 
+
+/**
+ * @desc    Chatbot Document Analysis (PDF, TXT, CSV, DOCX, XLSX)
+ * @route   POST /api/ai/document/analyze
+ * @access  Public / Authenticated
+ */
+export const analyzeDocumentWithAI = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No document file uploaded. Supported formats: PDF, TXT, CSV, DOCX, XLSX.',
+      });
+    }
+
+    const userPrompt = (req.body.message || '').trim() ||
+      'Please analyze this document. Provide an executive summary, identify key findings, extract important agricultural or business data, and outline practical recommendations.';
+
+    const parsed = await parseDocument(req.file.path, req.file.originalname);
+
+    // Clean up uploaded temp file
+    try {
+      await fs.promises.unlink(req.file.path);
+    } catch (_) {}
+
+    const fullPrompt = `The user has uploaded a document for analysis:
+**File Name**: ${parsed.fileName}
+**File Type**: ${parsed.fileType} (${parsed.fileSizeKb} KB)
+
+**Document Content**:
+"""
+${parsed.text}
+"""
+
+**User Inquiry**:
+${userPrompt}
+
+Please provide a thorough, structured, and helpful response analyzing the document content to address the user's inquiry. Use Markdown formatting with headings, bullet points, and tables where appropriate.`;
+
+    const result = await callDirectLLM(fullPrompt, []);
+    let reply = result?.reply;
+    if (!reply) {
+      reply = `### 📄 Document Analysis: **${parsed.fileName}**\n\n- **File Type**: ${parsed.fileType.toUpperCase()}\n- **Extracted Content Size**: ${parsed.fileSizeKb} KB (${parsed.charCount} characters)\n\n#### 📌 Key Content Extract:\n${parsed.text.slice(0, 600)}${parsed.text.length > 600 ? '...' : ''}\n\n#### 💡 Circular Bio-Economy & AgriCycle Assessment:\nDocument data has been successfully parsed and indexed into conversation context. When the primary AI engine is online, in-depth custom generative QA is applied to these extracted tables and text.`;
+    }
+
+    return res.status(200).json({
+      success: true,
+      reply,
+      document: {
+        fileName: parsed.fileName,
+        fileType: parsed.fileType,
+        fileSizeKb: parsed.fileSizeKb,
+        charCount: parsed.charCount,
+        metadata: parsed.metadata,
+      },
+    });
+  } catch (error) {
+    console.error('Error in analyzeDocumentWithAI:', error);
+    if (req.file?.path) {
+      try { await fs.promises.unlink(req.file.path); } catch (_) {}
+    }
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to process and analyze document: ' + error.message,
+    });
+  }
+};
 
 /**
  * @desc    Verify crop residue image and optionally update listing

@@ -1,6 +1,6 @@
 import express from 'express';
-import { chatWithAI, streamChatWithAI, verifyCropImage, checkAIHealth } from '../controllers/aiController.js';
-import { upload, handleUploadError } from '../middlewares/uploadMiddleware.js';
+import { chatWithAI, streamChatWithAI, verifyCropImage, checkAIHealth, analyzeDocumentWithAI } from '../controllers/aiController.js';
+import { upload, uploadDocument, handleUploadError } from '../middlewares/uploadMiddleware.js';
 import { protect } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -25,6 +25,18 @@ router.post('/chat', chatWithAI);
  * @access  Public
  */
 router.post('/chat/stream', streamChatWithAI);
+
+/**
+ * @route   POST /api/ai/document/analyze
+ * @desc    Upload and analyze document (PDF, TXT, CSV, DOCX, XLSX)
+ * @access  Public / Authenticated
+ */
+router.post(
+  '/document/analyze',
+  uploadDocument.single('file'),
+  handleUploadError,
+  analyzeDocumentWithAI
+);
 
 /**
  * @route   POST /api/ai/verify
