@@ -2431,6 +2431,9 @@ function setupAgriBot() {
         <span class="chat-ai-badge">AI Powered</span>
       </div>
       <div class="chat-header-actions">
+        <button id="agriBotNewChat" class="chat-hdr-btn" type="button" title="Start new conversation">➕</button>
+        <button id="agriBotHistoryBtn" class="chat-hdr-btn" type="button" title="Conversation history">🕒</button>
+        <button id="agriBotLangBtn" class="chat-hdr-btn" type="button" title="Language (EN / ಕನ್ನಡ / हिंदी)">🌐</button>
         <button id="agriBotClear" class="chat-hdr-btn" type="button" title="Clear conversation">🗑️</button>
         <button id="agriBotMaximize" class="chat-hdr-btn" type="button" title="Maximize/Restore window">⤢</button>
         <button id="agriBotClose" class="chat-hdr-btn" type="button" title="Close">✕</button>
@@ -2438,16 +2441,79 @@ function setupAgriBot() {
     `;
   }
 
+  // 1.1 Inject History Drawer and Language Menu if not present
+  let historyDrawer = document.getElementById("agriBotHistoryDrawer");
+  if (!historyDrawer) {
+    historyDrawer = document.createElement("div");
+    historyDrawer.id = "agriBotHistoryDrawer";
+    historyDrawer.className = "chat-history-drawer hidden";
+    historyDrawer.innerHTML = `
+      <div class="history-drawer-header">
+        <h5>🕒 Saved Conversations</h5>
+        <button id="agriBotCloseHistory" class="chat-hdr-btn" type="button" title="Close history">✕</button>
+      </div>
+      <div id="agriBotHistoryList" class="history-list"></div>
+    `;
+    windowEl.insertBefore(historyDrawer, header.nextSibling);
+  }
+
+  let langMenu = document.getElementById("agriBotLangMenu");
+  if (!langMenu) {
+    langMenu = document.createElement("div");
+    langMenu.id = "agriBotLangMenu";
+    langMenu.className = "chat-lang-menu hidden";
+    langMenu.innerHTML = `
+      <button type="button" class="lang-opt-btn active" data-lang="auto">🌐 Auto-detect</button>
+      <button type="button" class="lang-opt-btn" data-lang="en">🇬🇧 English</button>
+      <button type="button" class="lang-opt-btn" data-lang="kn">🇮🇳 ಕನ್ನಡ (Kannada)</button>
+      <button type="button" class="lang-opt-btn" data-lang="hi">🇮🇳 हिंदी (Hindi)</button>
+    `;
+    windowEl.insertBefore(langMenu, header.nextSibling);
+  }
+
   const closeBtn = document.getElementById("agriBotClose");
   const maxBtn = document.getElementById("agriBotMaximize");
   const clearBtn = document.getElementById("agriBotClear");
+  const newChatBtn = document.getElementById("agriBotNewChat");
+  const historyBtn = document.getElementById("agriBotHistoryBtn");
+  const closeHistoryBtn = document.getElementById("agriBotCloseHistory");
+  const langBtn = document.getElementById("agriBotLangBtn");
   const sendBtn = document.getElementById("agriBotSend");
   const input = document.getElementById("agriBotInput");
   const msgContainer = document.getElementById("agriBotMessages");
   const pills = document.querySelectorAll(".chat-pill");
   const inputBar = windowEl.querySelector(".chatbot-input-bar");
 
-  // Augment input bar with Pause/Resume and Stop buttons
+  // 1.2 Inject Attachment Preview Bar and Buttons into Input Bar
+  let attachedPreview = document.getElementById("agriBotAttachedPreview");
+  if (!attachedPreview && inputBar) {
+    attachedPreview = document.createElement("div");
+    attachedPreview.id = "agriBotAttachedPreview";
+    attachedPreview.className = "chat-attached-preview";
+    attachedPreview.style.display = "none";
+    inputBar.parentNode.insertBefore(attachedPreview, inputBar);
+  }
+
+  let fileInput = document.getElementById("agriBotFileInput");
+  let attachBtn = document.getElementById("agriBotAttach");
+  if (inputBar && !attachBtn) {
+    fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.id = "agriBotFileInput";
+    fileInput.style.display = "none";
+    fileInput.accept = ".pdf,.txt,.csv,.docx,.xlsx,.doc,.xls,.json,.md";
+
+    attachBtn = document.createElement("button");
+    attachBtn.id = "agriBotAttach";
+    attachBtn.className = "bot-attach-btn";
+    attachBtn.type = "button";
+    attachBtn.title = "Attach document (PDF, TXT, CSV, DOCX, XLSX)";
+    attachBtn.innerHTML = "📎";
+
+    inputBar.insertBefore(attachBtn, input);
+    inputBar.appendChild(fileInput);
+  }
+
   let pauseBtn = document.getElementById("agriBotPause");
   let stopBtn = document.getElementById("agriBotStop");
   if (inputBar && !stopBtn) {
@@ -2501,25 +2567,238 @@ function setupAgriBot() {
     btn.addEventListener("click", window.openAgriBot);
   });
 
-  // 3. Conversation Context & State Management
-  let chatHistory = [];
+  // 3. Multi-Conversation Management & Persistence
+  let conversations = [];
+  let currentConvId = null;
+
   try {
-    const saved = localStorage.getItem("agricycle_chat_history");
-    if (saved) {
-      chatHistory = JSON.parse(saved);
-      if (!Array.isArray(chatHistory)) chatHistory = [];
+    const savedConvs = localStorage.getItem("agricycle_conversations");
+    if (savedConvs) {
+      conversations = JSON.parse(savedConvs);
+      if (!Array.isArray(conversations)) conversations = [];
     }
   } catch (_) {
-    chatHistory = [];
+    conversations = [];
   }
 
-  function saveChatHistory() {
+  // Migration from legacy single-history format
+  if (conversations.length === 0) {
+    let legacyHistory = [];
     try {
-      localStorage.setItem("agricycle_chat_history", JSON.stringify(chatHistory.slice(-20)));
+      const saved = localStorage.getItem("agricycle_chat_history");
+      if (saved) legacyHistory = JSON.parse(saved) || [];
+    } catch (_) {}
+
+    const firstConv = {
+      id: "conv-" + Date.now(),
+      title: legacyHistory.length > 0 && legacyHistory[0]?.content ? legacyHistory[0].content.slice(0, 32) : "Welcome Conversation",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: legacyHistory
+    };
+    conversations = [firstConv];
+    currentConvId = firstConv.id;
+    saveConversations();
+  } else {
+    currentConvId = localStorage.getItem("agricycle_active_conv_id") || conversations[0].id;
+  }
+
+  function getActiveConversation() {
+    let conv = conversations.find(c => c.id === currentConvId);
+    if (!conv) {
+      conv = conversations[0] || {
+        id: "conv-" + Date.now(),
+        title: "New Conversation",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: []
+      };
+      currentConvId = conv.id;
+    }
+    return conv;
+  }
+
+  function saveConversations() {
+    try {
+      localStorage.setItem("agricycle_conversations", JSON.stringify(conversations.slice(0, 30)));
+      localStorage.setItem("agricycle_active_conv_id", currentConvId);
+      // Keep legacy key in sync for backwards compatibility
+      const active = getActiveConversation();
+      localStorage.setItem("agricycle_chat_history", JSON.stringify(active.messages.slice(-20)));
     } catch (_) {}
   }
 
-  // Active generation controller state
+  function renderHistoryList() {
+    const listEl = document.getElementById("agriBotHistoryList");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+
+    if (conversations.length === 0) {
+      listEl.innerHTML = '<div style="padding:14px;font-size:11px;color:var(--text-light);text-align:center;">No saved conversations</div>';
+      return;
+    }
+
+    conversations.forEach(conv => {
+      const itemEl = document.createElement("div");
+      itemEl.className = "history-item" + (conv.id === currentConvId ? " active" : "");
+      const timeStr = new Date(conv.updatedAt).toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+      const msgCount = (conv.messages || []).length;
+
+      itemEl.innerHTML = `
+        <div class="history-item-info">
+          <div class="history-item-title">${escapeHtml(conv.title || "Conversation")}</div>
+          <div class="history-item-meta">${timeStr} • ${msgCount} msgs</div>
+        </div>
+        <button type="button" class="history-item-delete" title="Delete conversation">🗑️</button>
+      `;
+
+      itemEl.addEventListener("click", (e) => {
+        if (e.target.closest(".history-item-delete")) return;
+        switchConversation(conv.id);
+        historyDrawer.classList.add("hidden");
+      });
+
+      const delBtn = itemEl.querySelector(".history-item-delete");
+      delBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        deleteConversation(conv.id);
+      });
+
+      listEl.appendChild(itemEl);
+    });
+  }
+
+  function switchConversation(convId) {
+    if (isGenerating) stopAgriBotGeneration();
+    currentConvId = convId;
+    saveConversations();
+    rehydrateActiveConversation();
+  }
+
+  function startNewConversation() {
+    if (isGenerating) stopAgriBotGeneration();
+    const newConv = {
+      id: "conv-" + Date.now(),
+      title: "New Conversation",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: []
+    };
+    conversations.unshift(newConv);
+    currentConvId = newConv.id;
+    saveConversations();
+    rehydrateActiveConversation();
+    historyDrawer.classList.add("hidden");
+    if (typeof showToast === "function") showToast("Started new conversation", "info");
+  }
+
+  function deleteConversation(convId) {
+    conversations = conversations.filter(c => c.id !== convId);
+    if (conversations.length === 0) {
+      startNewConversation();
+      return;
+    }
+    if (currentConvId === convId) {
+      currentConvId = conversations[0].id;
+    }
+    saveConversations();
+    renderHistoryList();
+    rehydrateActiveConversation();
+  }
+
+  newChatBtn?.addEventListener("click", startNewConversation);
+  historyBtn?.addEventListener("click", () => {
+    historyDrawer.classList.toggle("hidden");
+    langMenu.classList.add("hidden");
+    if (!historyDrawer.classList.contains("hidden")) {
+      renderHistoryList();
+    }
+  });
+  closeHistoryBtn?.addEventListener("click", () => historyDrawer.classList.add("hidden"));
+
+  // 4. Multilingual Selection Handling
+  let selectedLanguage = localStorage.getItem("agricycle_chat_lang") || "auto";
+
+  function updateLangUI() {
+    if (langMenu) {
+      langMenu.querySelectorAll(".lang-opt-btn").forEach(btn => {
+        const lang = btn.dataset.lang;
+        btn.classList.toggle("active", lang === selectedLanguage);
+      });
+    }
+    if (langBtn) {
+      const labels = { auto: "🌐", en: "🇬🇧", kn: "ಕನ್ನಡ", hi: "हिंदी" };
+      langBtn.innerHTML = labels[selectedLanguage] || "🌐";
+    }
+  }
+  updateLangUI();
+
+  langBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    langMenu.classList.toggle("hidden");
+    historyDrawer.classList.add("hidden");
+  });
+
+  langMenu?.querySelectorAll(".lang-opt-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      selectedLanguage = btn.dataset.lang || "auto";
+      localStorage.setItem("agricycle_chat_lang", selectedLanguage);
+      updateLangUI();
+      langMenu.classList.add("hidden");
+      if (typeof showToast === "function") {
+        const names = { auto: "Auto-detect", en: "English", kn: "Kannada (ಕನ್ನಡ)", hi: "Hindi (हिंदी)" };
+        showToast(`Language: ${names[selectedLanguage]}`, "info");
+      }
+    });
+  });
+
+  document.addEventListener("click", (e) => {
+    if (langMenu && !langMenu.contains(e.target) && e.target !== langBtn) {
+      langMenu.classList.add("hidden");
+    }
+  });
+
+  // 5. Document File Attachment Handling
+  let activeAttachedFile = null;
+
+  function setAttachedFile(file) {
+    activeAttachedFile = file;
+    if (!attachedPreview) return;
+    if (file) {
+      const sizeKb = Math.round(file.size / 1024);
+      attachedPreview.style.display = "flex";
+      attachedPreview.innerHTML = `
+        <span class="chat-attached-badge">📄 ${escapeHtml(file.name)} (${sizeKb} KB)</span>
+        <button type="button" class="remove-attach-btn" title="Remove attachment">✕</button>
+      `;
+      attachedPreview.querySelector(".remove-attach-btn")?.addEventListener("click", () => {
+        setAttachedFile(null);
+      });
+    } else {
+      attachedPreview.style.display = "none";
+      attachedPreview.innerHTML = "";
+      if (fileInput) fileInput.value = "";
+    }
+  }
+
+  attachBtn?.addEventListener("click", () => {
+    if (isGenerating) return;
+    fileInput?.click();
+  });
+
+  fileInput?.addEventListener("change", () => {
+    if (fileInput.files && fileInput.files[0]) {
+      const file = fileInput.files[0];
+      if (file.size > 10 * 1024 * 1024) {
+        if (typeof showToast === "function") showToast("File size limit is 10MB", "error");
+        return;
+      }
+      setAttachedFile(file);
+      if (typeof showToast === "function") showToast(`Attached ${file.name}`, "info");
+    }
+  });
+
+  // 6. Active Generation Controller State
   let activeAbortController = null;
   let activeReader = null;
   let isGenerating = false;
@@ -2562,27 +2841,17 @@ function setupAgriBot() {
   }
 
   window.clearAgriBotHistory = function() {
-    if (isGenerating) {
-      stopAgriBotGeneration();
-    }
-    chatHistory = [];
-    localStorage.removeItem("agricycle_chat_history");
-    if (msgContainer) {
-      msgContainer.innerHTML = `
-        <div class="chat-msg bot" data-raw-text="Hello! I am AgriBot, your intelligent assistant powered by generative AI.">
-          <p>👋 Hello! I am <strong>AgriBot</strong>, your intelligent assistant powered by generative AI.</p>
-          <p>I can help you with <strong>agricultural waste valuation</strong>, <strong>crop residue recycling</strong>, and any open-ended questions across <strong>technology, science, mathematics, coding, business, and writing</strong>.</p>
-          <p>How can I help you today?</p>
-        </div>
-      `;
-    }
-    if (typeof showToast === "function") {
-      showToast("Conversation cleared", "info");
-    }
+    if (isGenerating) stopAgriBotGeneration();
+    const active = getActiveConversation();
+    active.messages = [];
+    active.updatedAt = new Date().toISOString();
+    saveConversations();
+    rehydrateActiveConversation();
+    if (typeof showToast === "function") showToast("Conversation cleared", "info");
   };
   clearBtn?.addEventListener("click", window.clearAgriBotHistory);
 
-  // 4. Markdown Formatter with Code Syntax Wrappers & Tables
+  // 7. Markdown Formatter with Code Syntax Wrappers & Tables
   function escapeHtml(str) {
     return String(str || "")
       .replace(/&/g, "&amp;")
@@ -2595,7 +2864,7 @@ function setupAgriBot() {
   function formatChatMarkdown(raw) {
     if (!raw) return "";
 
-    // 4.1 Extract code blocks first to protect code contents
+    // 7.1 Extract code blocks first to protect code contents
     const codeBlocks = [];
     let text = raw.replace(/```([a-zA-Z0-9_\-\+]*)\n?([\s\S]*?)```/g, (match, lang, code) => {
       const ph = `__CODE_BLOCK_${codeBlocks.length}__`;
@@ -2603,10 +2872,10 @@ function setupAgriBot() {
       return ph;
     });
 
-    // 4.2 Escape HTML in regular text
+    // 7.2 Escape HTML in regular text
     text = escapeHtml(text);
 
-    // 4.3 Markdown tables
+    // 7.3 Markdown tables
     text = text.replace(/((?:\|[^\n]+\|\r?\n)+)/g, match => {
       const lines = match.trim().split(/\r?\n/).filter(Boolean);
       if (lines.length < 2) return match;
@@ -2625,16 +2894,16 @@ function setupAgriBot() {
       return table;
     });
 
-    // 4.4 Headings
+    // 7.4 Headings
     text = text.replace(/^#### (.*?)$/gm, '<h4>$1</h4>');
     text = text.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
     text = text.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
     text = text.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
 
-    // 4.5 Blockquotes
+    // 7.5 Blockquotes
     text = text.replace(/^> (.*?)$/gm, '<blockquote>$1</blockquote>');
 
-    // 4.6 Inline code (extract first to protect underscores like `GEMINI_API_KEY`)
+    // 7.6 Inline code
     const inlineCodes = [];
     text = text.replace(/`([^`\n]+)`/g, (match, code) => {
       const ph = `__INLINE_CODE_${inlineCodes.length}__`;
@@ -2642,18 +2911,18 @@ function setupAgriBot() {
       return ph;
     });
 
-    // 4.7 Bold & Italics
+    // 7.7 Bold & Italics
     text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     text = text.replace(/__(.*?)__/g, '<strong>$1</strong>');
     text = text.replace(/\*([^\*\n]+?)\*/g, '<em>$1</em>');
     text = text.replace(/(^|\s)_([^_ \n]+?)_(\s|$)/g, '$1<em>$2</em>$3');
 
-    // 4.8 Restore inline code
+    // 7.8 Restore inline code
     inlineCodes.forEach((ic, idx) => {
       text = text.replace(`__INLINE_CODE_${idx}__`, `<code>${ic}</code>`);
     });
 
-    // 4.8 Unordered lists
+    // 7.9 Unordered lists
     text = text.replace(/(?:^|\n)([\*\-] [^\n]+(?:\n[\*\-] [^\n]+)*)/g, (m, list) => {
       const items = list.split(/\n[\*\-] /).map((it, idx) => {
         const clean = idx === 0 ? it.replace(/^[\*\-] /, "") : it;
@@ -2662,7 +2931,7 @@ function setupAgriBot() {
       return `<ul>${items}</ul>`;
     });
 
-    // 4.9 Ordered lists
+    // 7.10 Ordered lists
     text = text.replace(/(?:^|\n)(\d+\. [^\n]+(?:\n\d+\. [^\n]+)*)/g, (m, list) => {
       const items = list.split(/\n\d+\. /).map((it, idx) => {
         const clean = idx === 0 ? it.replace(/^\d+\. /, "") : it;
@@ -2671,7 +2940,7 @@ function setupAgriBot() {
       return `<ol>${items}</ol>`;
     });
 
-    // 4.10 Paragraphs and line breaks
+    // 7.11 Paragraphs and line breaks
     const paragraphs = text.split(/\n\s*\n/);
     text = paragraphs.map(p => {
       p = p.trim();
@@ -2680,7 +2949,7 @@ function setupAgriBot() {
       return `<p>${p.replace(/\n/g, "<br>")}</p>`;
     }).filter(Boolean).join("");
 
-    // 4.11 Restore code blocks with language badge and copy button
+    // 7.12 Restore code blocks
     codeBlocks.forEach((cb, idx) => {
       const ph = `__CODE_BLOCK_${idx}__`;
       const escaped = escapeHtml(cb.code);
@@ -2700,7 +2969,7 @@ function setupAgriBot() {
     return text;
   }
 
-  // 5. Global Action Handlers: Copy Code, Copy Response, Regenerate
+  // 8. Global Action Handlers: Copy Code, Copy Response, Regenerate
   window.copyChatCode = function(btn) {
     const codeEl = btn.closest(".code-block-wrap")?.querySelector("pre code");
     if (!codeEl) return;
@@ -2727,17 +2996,18 @@ function setupAgriBot() {
     });
   };
 
-  // 6. UI Helpers: Typing Indicator & Message Rendering
-  function showTypingIndicator() {
+  // 9. UI Helpers: Typing Indicator & Message Rendering
+  function showTypingIndicator(customText) {
     hideTypingIndicator();
     const indicator = document.createElement("div");
     indicator.className = "typing-bubble";
     indicator.id = "agriBotTypingIndicator";
+    const label = customText || "AgriBot is thinking...";
     indicator.innerHTML = `
       <span class="typing-dot"></span>
       <span class="typing-dot"></span>
       <span class="typing-dot"></span>
-      <span style="margin-left: 4px;">AgriBot is thinking...</span>
+      <span style="margin-left: 4px;">${escapeHtml(label)}</span>
     `;
     msgContainer.appendChild(indicator);
     msgContainer.scrollTop = msgContainer.scrollHeight;
@@ -2749,7 +3019,6 @@ function setupAgriBot() {
   }
 
   function appendBotFooter(botEl) {
-    // Only append if footer does not already exist
     if (botEl.querySelector(".msg-footer")) return;
 
     const footer = document.createElement("div");
@@ -2765,7 +3034,7 @@ function setupAgriBot() {
     botEl.appendChild(footer);
   }
 
-  // 7. Interactive Message Controls: Render User Message with Edit & Rerun
+  // 10. Interactive Controls: Render User Message with Edit & Rerun
   function renderUserMessage(text, turnIndex) {
     const userEl = document.createElement("div");
     userEl.className = "chat-msg user";
@@ -2799,21 +3068,21 @@ function setupAgriBot() {
     return userEl;
   }
 
-  // Start inline editing of an existing user message
   function startEditingUserMessage(userEl, turnIndex) {
     if (isGenerating) return;
 
-    // Restore any other currently open edit box
+    const active = getActiveConversation();
+    // Restore any other open edit box
     msgContainer.querySelectorAll(".msg-edit-box").forEach(box => {
       const parent = box.closest(".chat-msg.user");
       const idx = parseInt(parent?.dataset.turnIndex, 10);
-      if (!isNaN(idx) && chatHistory[idx]) {
-        const origEl = renderUserMessage(chatHistory[idx].content, idx);
+      if (!isNaN(idx) && active.messages[idx]) {
+        const origEl = renderUserMessage(active.messages[idx].content, idx);
         parent.replaceWith(origEl);
       }
     });
 
-    const currentText = chatHistory[turnIndex]?.content || userEl.querySelector(".user-msg-text")?.textContent || "";
+    const currentText = active.messages[turnIndex]?.content || userEl.querySelector(".user-msg-text")?.textContent || "";
 
     userEl.innerHTML = `
       <div class="msg-edit-box">
@@ -2854,15 +3123,13 @@ function setupAgriBot() {
     });
   }
 
-  // Invalidate subsequent branch and resubmit edited question
   function saveAndResubmitEdit(turnIndex, newText) {
     if (isGenerating) return;
+    const active = getActiveConversation();
+    active.messages = active.messages.slice(0, turnIndex);
+    active.updatedAt = new Date().toISOString();
+    saveConversations();
 
-    // Invalidate conversation history from this turn onwards
-    chatHistory = chatHistory.slice(0, turnIndex);
-    saveChatHistory();
-
-    // Remove this message and all subsequent messages from DOM
     const allMsgs = Array.from(msgContainer.querySelectorAll(".chat-msg"));
     allMsgs.forEach(m => {
       const idx = parseInt(m.dataset.turnIndex, 10);
@@ -2871,21 +3138,19 @@ function setupAgriBot() {
       }
     });
 
-    // Submit new question
     handleUserQuery(newText);
   }
 
-  // Rerun a previous user question (invalidating subsequent branch)
   function rerunUserQuestion(turnIndex) {
     if (isGenerating) return;
-    const question = chatHistory[turnIndex]?.content;
+    const active = getActiveConversation();
+    const question = active.messages[turnIndex]?.content;
     if (!question) return;
 
-    // Invalidate conversation history from this turn onwards
-    chatHistory = chatHistory.slice(0, turnIndex);
-    saveChatHistory();
+    active.messages = active.messages.slice(0, turnIndex);
+    active.updatedAt = new Date().toISOString();
+    saveConversations();
 
-    // Remove this message and all subsequent messages from DOM
     const allMsgs = Array.from(msgContainer.querySelectorAll(".chat-msg"));
     allMsgs.forEach(m => {
       const idx = parseInt(m.dataset.turnIndex, 10);
@@ -2894,13 +3159,12 @@ function setupAgriBot() {
       }
     });
 
-    // Re-submit the question
     handleUserQuery(question);
   }
 
-  // Regenerate Bot response
   window.regenerateChatResponse = function(btn) {
     if (isGenerating) return;
+    const active = getActiveConversation();
 
     let botTurnIdx = NaN;
     if (btn) {
@@ -2909,9 +3173,8 @@ function setupAgriBot() {
     }
 
     if (isNaN(botTurnIdx)) {
-      // Find the last assistant turn in chatHistory
-      for (let i = chatHistory.length - 1; i >= 0; i--) {
-        if (chatHistory[i].role === "assistant") {
+      for (let i = active.messages.length - 1; i >= 0; i--) {
+        if (active.messages[i].role === "assistant") {
           botTurnIdx = i;
           break;
         }
@@ -2924,14 +3187,13 @@ function setupAgriBot() {
     }
 
     const userTurnIdx = botTurnIdx - 1;
-    const userQuestion = chatHistory[userTurnIdx]?.content;
+    const userQuestion = active.messages[userTurnIdx]?.content;
     if (!userQuestion) return;
 
-    // Invalidate history from botTurnIdx onwards
-    chatHistory = chatHistory.slice(0, botTurnIdx);
-    saveChatHistory();
+    active.messages = active.messages.slice(0, botTurnIdx);
+    active.updatedAt = new Date().toISOString();
+    saveConversations();
 
-    // Remove the bot message and any subsequent messages from DOM
     const allMsgs = Array.from(msgContainer.querySelectorAll(".chat-msg"));
     allMsgs.forEach(m => {
       const idx = parseInt(m.dataset.turnIndex, 10);
@@ -2940,11 +3202,10 @@ function setupAgriBot() {
       }
     });
 
-    // Handle query in regeneration mode (isRegen = true)
     handleUserQuery(userQuestion, true);
   };
 
-  // 8. Stop / Cancel Generation Handler
+  // 11. Stop / Cancel Generation Handler
   function stopAgriBotGeneration() {
     if (!isGenerating) return;
 
@@ -2985,10 +3246,12 @@ function setupAgriBot() {
       currentBotMsgEl.dataset.rawText = currentBotRawText;
       appendBotFooter(currentBotMsgEl);
 
-      const botTurnIndex = chatHistory.length;
+      const active = getActiveConversation();
+      const botTurnIndex = active.messages.length;
       currentBotMsgEl.dataset.turnIndex = botTurnIndex;
-      chatHistory.push({ role: "assistant", content: currentBotRawText });
-      saveChatHistory();
+      active.messages.push({ role: "assistant", content: currentBotRawText });
+      active.updatedAt = new Date().toISOString();
+      saveConversations();
     }
 
     setGeneratingState(false);
@@ -2997,7 +3260,7 @@ function setupAgriBot() {
 
   stopBtn?.addEventListener("click", stopAgriBotGeneration);
 
-  // 9. Pause / Resume Handler
+  // 12. Pause / Resume Handler
   function flushPauseBuffer() {
     if (pauseBuffer.length > 0 && currentBotContentEl) {
       while (pauseBuffer.length > 0) {
@@ -3033,18 +3296,107 @@ function setupAgriBot() {
     }
   });
 
-  // 10. Core Dispatcher with Streaming, Pause/Resume & Safe Stop
+  // 13. Core Dispatcher with Streaming, Document Upload & Multilingual
   async function handleUserQuery(query, isRegen = false) {
     const cleanQuery = String(query || "").trim();
-    if (!cleanQuery) return;
+    const hasAttachment = Boolean(activeAttachedFile);
+
+    if (!cleanQuery && !hasAttachment) return;
+
+    const active = getActiveConversation();
+    const API_BASE = window.location.port === "5000" ? "" : "http://localhost:5000";
+
+    // 13.1 Handle Document Upload Analysis
+    if (hasAttachment) {
+      const file = activeAttachedFile;
+      setAttachedFile(null); // Clear attachment preview
+
+      const displayText = cleanQuery ? `📄 **Attached Document**: \`${file.name}\`\n\n${cleanQuery}` : `📄 **Attached Document**: \`${file.name}\` (Analyze Document)`;
+      const userTurnIndex = active.messages.length;
+      const userEl = renderUserMessage(displayText, userTurnIndex);
+      msgContainer.appendChild(userEl);
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+      active.messages.push({ role: "user", content: displayText });
+      if (active.messages.length <= 2) {
+        active.title = `Document: ${file.name.slice(0, 24)}`;
+      }
+      active.updatedAt = new Date().toISOString();
+      saveConversations();
+
+      showTypingIndicator(`Analyzing document '${file.name}'...`);
+      setGeneratingState(true, false);
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        if (cleanQuery) formData.append("message", cleanQuery);
+
+        const docRes = await fetch(`${API_BASE}/api/ai/document/analyze`, {
+          method: "POST",
+          body: formData,
+        });
+
+        hideTypingIndicator();
+        setGeneratingState(false);
+
+        if (!docRes.ok) throw new Error(`HTTP ${docRes.status}`);
+        const data = await docRes.json();
+        const reply = data.reply || "Document processed successfully.";
+
+        const botMsgEl = document.createElement("div");
+        botMsgEl.className = "chat-msg bot";
+        const botContentEl = document.createElement("div");
+        botContentEl.className = "msg-content";
+        botContentEl.innerHTML = formatChatMarkdown(reply);
+        botMsgEl.appendChild(botContentEl);
+
+        botMsgEl.dataset.rawText = reply;
+        const botTurnIndex = active.messages.length;
+        botMsgEl.dataset.turnIndex = botTurnIndex;
+        appendBotFooter(botMsgEl);
+        msgContainer.appendChild(botMsgEl);
+
+        active.messages.push({ role: "assistant", content: reply });
+        active.updatedAt = new Date().toISOString();
+        saveConversations();
+      } catch (docErr) {
+        hideTypingIndicator();
+        setGeneratingState(false);
+        const errEl = document.createElement("div");
+        errEl.className = "chat-msg bot";
+        errEl.innerHTML = `<p style="color:var(--rose);">⚠️ <strong>Document Analysis Notice:</strong> Failed to analyze document (${escapeHtml(docErr.message)}). Please verify document format and try again.</p>`;
+        msgContainer.appendChild(errEl);
+      }
+
+      msgContainer.scrollTop = msgContainer.scrollHeight;
+      if (input) {
+        input.value = "";
+        setTimeout(() => input.focus(), 100);
+      }
+      return;
+    }
+
+    // 13.2 Multilingual Query Augmentation
+    let queryPayload = cleanQuery;
+    if (selectedLanguage === "kn") {
+      queryPayload = `[Respond in Kannada / ಕನ್ನಡ]: ${cleanQuery}`;
+    } else if (selectedLanguage === "hi") {
+      queryPayload = `[Respond in Hindi / हिंदी]: ${cleanQuery}`;
+    }
 
     if (!isRegen) {
-      const userTurnIndex = chatHistory.length;
+      const userTurnIndex = active.messages.length;
       const userEl = renderUserMessage(cleanQuery, userTurnIndex);
       msgContainer.appendChild(userEl);
       msgContainer.scrollTop = msgContainer.scrollHeight;
-      chatHistory.push({ role: "user", content: cleanQuery });
-      saveChatHistory();
+      active.messages.push({ role: "user", content: cleanQuery });
+
+      // Auto-generate conversation title from first user query
+      if (active.messages.length <= 2) {
+        active.title = cleanQuery.slice(0, 32);
+      }
+      active.updatedAt = new Date().toISOString();
+      saveConversations();
     }
 
     showTypingIndicator();
@@ -3056,21 +3408,19 @@ function setupAgriBot() {
     pauseBuffer = [];
     currentBotRawText = "";
 
-    const API_BASE = window.location.port === "5000" ? "" : "http://localhost:5000";
-    const historyPayload = chatHistory.slice(-10);
-
+    const historyPayload = active.messages.slice(-10);
     let streamSuccess = false;
     currentBotMsgEl = null;
     currentBotContentEl = null;
 
-    // 10.1 SSE Streaming
+    // 13.3 SSE Streaming
     try {
       const streamRes = await fetch(`${API_BASE}/api/ai/chat/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         signal: activeAbortController.signal,
         body: JSON.stringify({
-          message: cleanQuery,
+          message: queryPayload,
           history: historyPayload
         })
       });
@@ -3131,12 +3481,11 @@ function setupAgriBot() {
           }
         }
 
-        // If generation finished from backend but user is still paused, wait until user resumes or stops
+        // Wait if paused at finish
         while (isGenerationPaused && isGenerating && !activeAbortController?.signal.aborted) {
           await new Promise(resolve => setTimeout(resolve, 150));
         }
 
-        // Flush remaining stream buffer if not aborted
         if (isGenerating && !activeAbortController?.signal.aborted) {
           if (buffer.trim().startsWith("data: ")) {
             try {
@@ -3161,28 +3510,27 @@ function setupAgriBot() {
             if (pBadge) pBadge.remove();
 
             currentBotMsgEl.dataset.rawText = currentBotRawText;
-            const botTurnIndex = chatHistory.length;
+            const botTurnIndex = active.messages.length;
             currentBotMsgEl.dataset.turnIndex = botTurnIndex;
             appendBotFooter(currentBotMsgEl);
-            chatHistory.push({ role: "assistant", content: currentBotRawText });
-            saveChatHistory();
+            active.messages.push({ role: "assistant", content: currentBotRawText });
+            active.updatedAt = new Date().toISOString();
+            saveConversations();
           }
         }
       }
     } catch (streamErr) {
       if (activeAbortController?.signal.aborted || streamErr.name === "AbortError") {
-        // User deliberately aborted generation; do not fall back
         return;
       }
       console.warn("AgriBot streaming unavailable, falling back to standard endpoint:", streamErr);
     }
 
-    // If generation was aborted mid-stream, exit cleanly
     if (!isGenerating || activeAbortController?.signal.aborted) {
       return;
     }
 
-    // 10.2 Standard Fallback if stream was unavailable or empty
+    // 13.4 Standard Fallback
     if (!streamSuccess && isGenerating) {
       try {
         const fbRes = await fetch(`${API_BASE}/api/ai/chat`, {
@@ -3190,7 +3538,7 @@ function setupAgriBot() {
           headers: { "Content-Type": "application/json" },
           signal: activeAbortController.signal,
           body: JSON.stringify({
-            message: cleanQuery,
+            message: queryPayload,
             history: historyPayload
           })
         });
@@ -3212,11 +3560,12 @@ function setupAgriBot() {
         currentBotMsgEl.classList.remove("generating");
         currentBotContentEl.innerHTML = formatChatMarkdown(reply);
         currentBotMsgEl.dataset.rawText = reply;
-        const botTurnIndex = chatHistory.length;
+        const botTurnIndex = active.messages.length;
         currentBotMsgEl.dataset.turnIndex = botTurnIndex;
         appendBotFooter(currentBotMsgEl);
-        chatHistory.push({ role: "assistant", content: reply });
-        saveChatHistory();
+        active.messages.push({ role: "assistant", content: reply });
+        active.updatedAt = new Date().toISOString();
+        saveConversations();
       } catch (err) {
         if (activeAbortController?.signal.aborted || err.name === "AbortError") {
           return;
@@ -3244,10 +3593,24 @@ function setupAgriBot() {
     msgContainer.scrollTop = msgContainer.scrollHeight;
   }
 
-  // 11. Rehydrate chat history on initial load
-  if (chatHistory.length > 0 && msgContainer) {
+  // 14. Rehydrate active conversation
+  function rehydrateActiveConversation() {
+    if (!msgContainer) return;
+    const active = getActiveConversation();
     msgContainer.innerHTML = "";
-    chatHistory.forEach((item, idx) => {
+
+    if (!active.messages || active.messages.length === 0) {
+      msgContainer.innerHTML = `
+        <div class="chat-msg bot" data-raw-text="Hello! I am AgriBot, your intelligent assistant powered by generative AI.">
+          <p>👋 Hello! I am <strong>AgriBot</strong>, your intelligent assistant powered by generative AI.</p>
+          <p>I can help you with <strong>agricultural waste valuation</strong>, <strong>crop residue recycling</strong>, <strong>document analysis (PDF, CSV, DOCX)</strong>, and any open-ended questions across <strong>technology, science, mathematics, coding, business, and writing</strong> in <strong>English, ಕನ್ನಡ, or हिंदी</strong>.</p>
+          <p>How can I help you today?</p>
+        </div>
+      `;
+      return;
+    }
+
+    active.messages.forEach((item, idx) => {
       if (item.role === "user") {
         msgContainer.appendChild(renderUserMessage(item.content, idx));
       } else {
@@ -3266,11 +3629,13 @@ function setupAgriBot() {
     msgContainer.scrollTop = msgContainer.scrollHeight;
   }
 
-  // 12. Event Bindings: Input Submit & Quick Action Pills
+  rehydrateActiveConversation();
+
+  // 15. Event Bindings: Input Submit & Quick Action Pills
   sendBtn?.addEventListener("click", () => {
     if (isGenerating) return;
     const val = input.value.trim();
-    if (!val) return;
+    if (!val && !activeAttachedFile) return;
     handleUserQuery(val);
   });
 
@@ -3279,7 +3644,7 @@ function setupAgriBot() {
       e.preventDefault();
       if (isGenerating) return;
       const val = input.value.trim();
-      if (!val) return;
+      if (!val && !activeAttachedFile) return;
       handleUserQuery(val);
     }
   });

@@ -46,13 +46,40 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Multer upload instance
+// Multer upload instance for images
 export const upload = multer({
   storage,
   fileFilter,
   limits: {
     fileSize: (parseInt(process.env.MAX_FILE_SIZE_MB, 10) || 5) * 1024 * 1024, // Default 5MB
     files: 5, // Maximum 5 images per upload
+  },
+});
+
+// Allowed Document Extensions for Chatbot File Analysis
+const ALLOWED_DOC_EXTENSIONS = ['.pdf', '.txt', '.csv', '.docx', '.doc', '.xlsx', '.xls', '.json', '.md'];
+
+const documentFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (ALLOWED_DOC_EXTENSIONS.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        `Unsupported document format '${ext}'. Supported formats: PDF, TXT, CSV, DOCX, XLSX.`
+      ),
+      false
+    );
+  }
+};
+
+// Multer upload instance for Chatbot Documents
+export const uploadDocument = multer({
+  storage,
+  fileFilter: documentFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit for documents
+    files: 1,
   },
 });
 

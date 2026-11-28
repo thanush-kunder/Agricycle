@@ -2223,6 +2223,201 @@ p {
   50% { opacity: 1; transform: scale(1.02); }
 }
 
+/* Document Attachment Button in Chat Input */
+.chatbot-input-bar button.bot-attach-btn {
+  background: transparent;
+  color: var(--forest);
+  border: 1px solid var(--line-strong);
+  font-size: 14px;
+}
+
+.chatbot-input-bar button.bot-attach-btn:hover {
+  background: rgba(43, 119, 74, 0.1);
+  color: var(--green);
+  transform: scale(1.05);
+}
+
+/* Attached File Preview Bar */
+.chat-attached-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: rgba(43, 119, 74, 0.08);
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--forest);
+}
+
+.chat-attached-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+}
+
+.remove-attach-btn {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  transition: all 0.15s ease;
+}
+
+.remove-attach-btn:hover {
+  background: rgba(220, 38, 38, 0.15);
+  color: #dc2626;
+}
+
+/* Multi-Conversation History Drawer */
+.chat-history-drawer {
+  position: absolute;
+  top: 48px;
+  left: 0;
+  width: 82%;
+  height: calc(100% - 48px);
+  background: var(--surface);
+  border-right: 1px solid var(--line-strong);
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.12);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.25s ease;
+}
+
+.chat-history-drawer.hidden {
+  display: none;
+}
+
+.history-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(43, 119, 74, 0.05);
+}
+
+.history-drawer-header h5 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--forest);
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.history-item {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: background 0.15s ease;
+}
+
+.history-item:hover {
+  background: rgba(43, 119, 74, 0.06);
+}
+
+.history-item.active {
+  background: rgba(43, 119, 74, 0.12);
+  border-left: 3px solid var(--green);
+}
+
+.history-item-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.history-item-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history-item-meta {
+  font-size: 9.5px;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+.history-item-delete {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+}
+
+.history-item:hover .history-item-delete {
+  opacity: 1;
+}
+
+.history-item-delete:hover {
+  background: rgba(220, 38, 38, 0.15);
+  color: #dc2626;
+}
+
+/* Language Switcher Popup */
+.chat-lang-menu {
+  position: absolute;
+  top: 46px;
+  right: 48px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  min-width: 130px;
+}
+
+.chat-lang-menu.hidden {
+  display: none;
+}
+
+.lang-opt-btn {
+  padding: 6px 10px;
+  font-size: 11px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  color: var(--ink);
+  transition: all 0.12s ease;
+}
+
+.lang-opt-btn:hover {
+  background: rgba(43, 119, 74, 0.09);
+  color: var(--forest);
+}
+
+.lang-opt-btn.active {
+  font-weight: 700;
+  color: var(--green);
+  background: rgba(43, 119, 74, 0.12);
+}
+
 /* ==========================================================================
    Steps, Callouts & Benefits
    ========================================================================== */
@@ -2955,6 +3150,75 @@ footer .brand {
 [data-theme="dark"] .edit-save-btn {
   background: #d6ef92;
   color: #0d281a;
+}
+
+[data-theme="dark"] .chatbot-input-bar button.bot-attach-btn {
+  color: #d1dfd6;
+  border-color: #274230;
+}
+
+[data-theme="dark"] .chatbot-input-bar button.bot-attach-btn:hover {
+  background: rgba(214, 239, 146, 0.15);
+  color: #d6ef92;
+}
+
+[data-theme="dark"] .chat-attached-preview {
+  background: #102419;
+  border-top-color: #274230;
+  color: #d6ef92;
+}
+
+[data-theme="dark"] .chat-history-drawer {
+  background: #141f17;
+  border-right-color: #274230;
+}
+
+[data-theme="dark"] .history-drawer-header {
+  background: #0d1e15;
+  border-bottom-color: #274230;
+}
+
+[data-theme="dark"] .history-drawer-header h5 {
+  color: #d6ef92;
+}
+
+[data-theme="dark"] .history-item {
+  border-bottom-color: #203527;
+}
+
+[data-theme="dark"] .history-item:hover {
+  background: rgba(43, 119, 74, 0.2);
+}
+
+[data-theme="dark"] .history-item.active {
+  background: rgba(43, 119, 74, 0.3);
+}
+
+[data-theme="dark"] .history-item-title {
+  color: #f1f8f3;
+}
+
+[data-theme="dark"] .history-item-meta {
+  color: #8fa696;
+}
+
+[data-theme="dark"] .chat-lang-menu {
+  background: #141f17;
+  border-color: #274230;
+}
+
+[data-theme="dark"] .lang-opt-btn {
+  color: #e2ede5;
+}
+
+[data-theme="dark"] .lang-opt-btn:hover {
+  background: rgba(43, 119, 74, 0.25);
+  color: #d6ef92;
+}
+
+[data-theme="dark"] .lang-opt-btn.active {
+  color: #d6ef92;
+  background: rgba(43, 119, 74, 0.35);
 }
 
 [data-theme="dark"] .chat-input-row {
